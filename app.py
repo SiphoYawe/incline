@@ -54,9 +54,12 @@ def _ensure_path() -> None:
         sys.path.insert(0, "/root/incline")
 
 
-@app.function(image=image, secrets=[secret], schedule=modal.Period(seconds=LOOP_PERIOD_SECONDS))
+@app.function(image=image, secrets=[secret])
 def scheduled_loop() -> None:
-    """The hands-off driver — keeps firing after the operator walks away."""
+    """The loop driver. NOTE: Reddit/X block Modal's datacenter IP and the
+    posting CLIs aren't here, so the LIVE agent runs from a residential host via
+    run_local.py. The Modal schedule is intentionally disabled to avoid racing
+    that local driver; this stays callable for manual cloud passes."""
     _ensure_path()
     import loop
 

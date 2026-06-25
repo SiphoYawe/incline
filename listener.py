@@ -35,10 +35,15 @@ import reach
 
 # Locked demand-intent phrase list (S-E1-1 AC3). Case-insensitive substring match.
 _INTENT_PHRASES = (
-    "i wish there was",
+    "i wish there was a tool",
+    "i wish there was an app",
+    "i wish there was a website",
+    "is there a tool that",
+    "is there an app that",
     "does a tool exist",
-    "is there anything that",
-    "how do i",
+    "someone should make",
+    "somebody should make",
+    "i need a tool that",
 )
 
 _REDDIT_TIMEOUT = 10  # seconds

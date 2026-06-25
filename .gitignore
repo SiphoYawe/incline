@@ -12,3 +12,4 @@ venv/
 .vercel/
 dashboard/dist/
 .gstack/
+.vercel

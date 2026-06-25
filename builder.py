@@ -163,7 +163,7 @@ def generate(opportunity: dict) -> Optional[dict]:
         raw = llm.complete(
             prompt,
             model=llm.CODEGEN_MODEL,
-            max_tokens=8000,
+            max_tokens=4096,
             temperature=0.2,
         )
         html = _strip_code_fences(raw)

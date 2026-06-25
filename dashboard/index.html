@@ -27,15 +27,15 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; }
+  html { height: 100%; }
+  /* The page now SCROLLS for the richer Identified-posts section, while the
+     hero counter + glanceable summary stay pinned at the top of the viewport.
+     The top bar is sticky so LIVE + clock are always visible on the projector. */
   body {
     background: var(--bg);
     color: var(--ink);
     font-family: var(--sans);
-    overflow: hidden;            /* 16:9 projector-safe, no scroll */
-    height: 100vh;
-    display: grid;
-    grid-template-rows: auto auto 1fr auto;
+    min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -46,6 +46,8 @@
       radial-gradient(90% 60% at 100% 0%, rgba(59,130,246,0.07), rgba(59,130,246,0) 60%);
   }
   body > * { position: relative; z-index: 1; }
+  /* z-index scale: ground 0 · content 1 · sticky topbar 30 */
+  .topbar { position: sticky; top: 0; z-index: 30; background: var(--bg); }
 
   .label {
     text-transform: uppercase;
@@ -114,6 +116,168 @@
   }
   .activity .label { margin-bottom: 16px; }
   #feed { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Identified posts — the visible heart of the page ────────────────── */
+  .posts {
+    padding: 26px 40px 38px; border-top: 1px solid var(--border);
+    animation: rise .55s cubic-bezier(.22,1,.36,1) .2s both;
+  }
+  .posts-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap; margin-bottom: 6px;
+  }
+  .posts-title { display: flex; flex-direction: column; gap: 6px; }
+  .posts-title h2 {
+    font-size: 1.18rem; font-weight: 650; letter-spacing: -0.01em; color: var(--ink);
+  }
+  .posts-title .sub { font-family: var(--mono); font-size: 0.86rem; color: var(--slate); letter-spacing: 0.01em; }
+  /* glanceable outcome summary — three counters in the section header */
+  .posts-summary { display: flex; gap: 10px; flex-wrap: wrap; }
+  .sumchip {
+    display: inline-flex; align-items: baseline; gap: 8px;
+    padding: 8px 14px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 1px 2px rgba(17,43,67,0.05);
+  }
+  .sumchip .n { font-family: var(--mono); font-size: 1.12rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+  .sumchip .k { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; color: var(--slate); }
+  .sumchip.built  .n { color: var(--cobalt); }
+  .sumchip.free   .n { color: var(--sky-ink); }
+  .sumchip.total  .n { color: var(--ink); }
+
+  #posts-list { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; }
+
+  /* one identified post */
+  .post {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px 16px; box-shadow: 0 1px 2px rgba(17,43,67,0.05);
+    display: grid; grid-template-columns: 1fr; gap: 14px;
+    transition: box-shadow .28s cubic-bezier(.22,1,.36,1), border-color .28s cubic-bezier(.22,1,.36,1);
+  }
+  .post:hover { box-shadow: 0 8px 26px -16px rgba(17,43,67,0.32); border-color: var(--border-2); }
+  .post.new { animation: slideIn 360ms cubic-bezier(.22,1,.36,1); }
+  /* the POINT_FREE post gets a quiet sky wash — the "we helped for free" soul */
+  .post.is-free {
+    background: linear-gradient(180deg, var(--surface) 0%, rgba(59,130,246,0.045) 100%);
+    border-color: rgba(59,130,246,0.32);
+  }
+
+  .post-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .src {
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 600;
+    text-transform: lowercase; letter-spacing: 0.04em;
+    padding: 3px 9px; border-radius: 6px; line-height: 1.4;
+  }
+  .src.reddit { color: #B23A1E; background: rgba(178,58,30,0.10); }
+  .src.x      { color: var(--ink); background: rgba(17,43,67,0.07); }
+  .post-author { font-size: 0.92rem; font-weight: 600; color: var(--ink-2); }
+  .tag-primed {
+    font-family: var(--mono); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--sky-ink);
+    padding: 2px 7px; border: 1px solid rgba(59,130,246,0.34); border-radius: 999px;
+  }
+  .post-age { margin-left: auto; font-family: var(--mono); font-size: 0.8rem; color: var(--slate); font-variant-numeric: tabular-nums; }
+
+  /* verbatim quote — the proof of real demand */
+  .quote {
+    font-size: 1rem; line-height: 1.5; color: var(--ink);
+    border-left: none; padding: 12px 14px; border-radius: 10px;
+    background: var(--surface-2); position: relative;
+  }
+  .quote .qbody { white-space: pre-wrap; }
+  .quote.clamp .qbody {
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .quote .more {
+    display: inline-block; margin-top: 6px; font-family: var(--mono); font-size: 0.78rem;
+    font-weight: 600; color: var(--sky-ink); background: none; border: none;
+    cursor: pointer; padding: 0; letter-spacing: 0.02em;
+  }
+  .quote .more:hover { text-decoration: underline; }
+
+  /* the verdict / score / outcome line */
+  .post-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .verdict {
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 4px 10px; border-radius: 7px; line-height: 1.4;
+  }
+  /* build family — sky / ink */
+  .verdict.build { color: var(--sky-ink); background: rgba(59,130,246,0.10); border: 1px solid rgba(59,130,246,0.24); }
+  /* POINT_FREE — distinct calm highlight, never alarming */
+  .verdict.free {
+    color: #1E6FA8; background: rgba(125,211,252,0.18);
+    border: 1px solid rgba(56,143,214,0.34);
+  }
+  .verdict.other { color: var(--slate); background: rgba(86,105,126,0.10); border: 1px solid var(--border-2); }
+  .score { font-family: var(--mono); font-size: 0.82rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .score b { color: var(--ink); font-weight: 600; }
+  .score .x { color: var(--slate); padding: 0 2px; }
+  .incumbent { font-family: var(--mono); font-size: 0.78rem; color: var(--slate); }
+
+  /* OUTCOME — the key visibility row */
+  .outcome { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 2px; }
+  .built-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-weight: 650; font-size: 0.95rem; color: #fff; background: var(--cobalt);
+    text-decoration: none; padding: 8px 14px; border-radius: 9px;
+    box-shadow: 0 2px 6px -2px rgba(29,78,216,0.5);
+    transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s cubic-bezier(.22,1,.36,1);
+  }
+  .built-link:hover { transform: translateY(-1px); box-shadow: 0 8px 18px -6px rgba(29,78,216,0.55); }
+  .built-link:active { transform: translateY(0); }
+  .built-link .arr { font-size: 0.9em; opacity: 0.9; }
+  .built-price { font-family: var(--mono); font-size: 0.95rem; font-weight: 600; color: var(--cobalt); font-variant-numeric: tabular-nums; }
+  .fallback {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--warn); letter-spacing: 0.04em;
+    padding: 3px 8px; border: 1px solid rgba(199,125,17,0.34); border-radius: 999px;
+  }
+  /* pointed-to-free outcome — quiet emphasis, the soul */
+  .pointed {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    font-size: 0.95rem; color: var(--ink-2);
+  }
+  .pointed .lede { font-weight: 650; color: var(--sky-ink); }
+  .pointed .free-text { color: var(--ink-2); }
+  .status-chip {
+    font-family: var(--mono); font-size: 0.78rem; color: var(--slate); letter-spacing: 0.04em;
+    padding: 4px 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px;
+  }
+
+  /* the reply Incline wrote */
+  .reply { border-top: 1px dashed var(--border-2); padding-top: 14px; }
+  .reply-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .reply-head .lbl {
+    text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.68rem; font-weight: 600; color: var(--slate);
+  }
+  .mode-tag {
+    font-family: var(--mono); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 999px;
+  }
+  .mode-tag.posted { color: var(--sky-ink); background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.26); }
+  .mode-tag.draft  { color: var(--warn); background: rgba(199,125,17,0.10); border: 1px solid rgba(199,125,17,0.30); }
+  .reply-body {
+    font-size: 0.95rem; line-height: 1.55; color: var(--ink-2); white-space: pre-wrap;
+  }
+  .reply-body.clamp {
+    display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .reply .more {
+    display: inline-block; margin-top: 8px; font-family: var(--mono); font-size: 0.78rem;
+    font-weight: 600; color: var(--sky-ink); background: none; border: none;
+    cursor: pointer; padding: 0; letter-spacing: 0.02em;
+  }
+  .reply .more:hover { text-decoration: underline; }
+
+  .post-foot { display: flex; align-items: center; gap: 14px; }
+  .orig-link {
+    font-family: var(--mono); font-size: 0.8rem; color: var(--sky-ink); text-decoration: none;
+    display: inline-flex; align-items: center; gap: 5px; letter-spacing: 0.02em;
+  }
+  .orig-link:hover { text-decoration: underline; }
+
+  .posts-empty {
+    font-family: var(--mono); font-size: 0.92rem; color: var(--slate);
+    padding: 26px 0; text-align: center;
+  }
   .feed-line {
     display: grid; grid-template-columns: 62px 172px 1fr; gap: 16px;
     align-items: baseline; padding: 9px 12px; border-radius: 8px;
@@ -217,6 +381,24 @@
     <div id="feed"></div>
   </section>
 
+  <!-- Identified posts — every signal Incline heard, qualified, and acted on -->
+  <section class="posts">
+    <div class="posts-head">
+      <div class="posts-title">
+        <h2>Identified posts</h2>
+        <span class="sub">every signal heard &amp; qualified · what we built or pointed to · newest first</span>
+      </div>
+      <div class="posts-summary">
+        <span class="sumchip built"><span class="n" id="sum-built">0</span><span class="k">tools built</span></span>
+        <span class="sumchip free"><span class="n" id="sum-free">0</span><span class="k">pointed free</span></span>
+        <span class="sumchip total"><span class="n" id="sum-total">0</span><span class="k">identified</span></span>
+      </div>
+    </div>
+    <div id="posts-list">
+      <div class="posts-empty">listening for the first qualified signal…</div>
+    </div>
+  </section>
+
   <!-- Guardrail footer -->
   <footer class="footer">
     <span class="label foot-label">Guardrails · enforced in code</span>
@@ -255,6 +437,19 @@
       const d = new Date(iso);
       return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
     };
+    // relative age, compact ("just now", "4m", "2h", "3d")
+    const relAge = (iso) => {
+      if (!iso) return "";
+      const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+      if (s < 45) return "just now";
+      if (s < 3600) return Math.round(s / 60) + "m ago";
+      if (s < 86400) return Math.round(s / 3600) + "h ago";
+      return Math.round(s / 86400) + "d ago";
+    };
+    // escape user-supplied text before it touches innerHTML
+    const esc = (s) => String(s == null ? "" : s)
+      .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 
     const prefersReduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
@@ -415,6 +610,199 @@
       } catch (e) { console.warn("loadFeed failed:", e); }
     }
 
+    // ── Identified posts ────────────────────────────────────────────────
+    // Build a DOM node for one identified post (opportunity + signal + tool + reply).
+    function makePostCard(op, reply, isNew) {
+      const sig = op.signals || {};
+      const tools = Array.isArray(op.tools) ? op.tools : [];
+      const tool = tools[0] || null;
+      const verdict = op.verdict || "";
+      const isFree = verdict === "POINT_FREE";
+
+      const card = document.createElement("article");
+      card.className = "post" + (isFree ? " is-free" : "") + (isNew ? " new" : "");
+
+      // ── top row: source · author · primed · age ──
+      const top = document.createElement("div");
+      top.className = "post-top";
+      const src = (sig.source || "").toLowerCase();
+      const srcCls = src === "x" || src === "twitter" ? "x" : "reddit";
+      top.innerHTML =
+        '<span class="src ' + srcCls + '">' + esc(src || "signal") + '</span>' +
+        (sig.author ? '<span class="post-author">' + esc(sig.author) + '</span>' : '') +
+        (sig.is_primed ? '<span class="tag-primed">primed</span>' : '') +
+        '<span class="post-age">' + esc(relAge(op.created_at)) + '</span>';
+      card.appendChild(top);
+
+      // ── verbatim quote (proof of demand), clamp to 3 lines ──
+      if (sig.text) {
+        const q = document.createElement("div");
+        q.className = "quote clamp";
+        const body = document.createElement("div");
+        body.className = "qbody"; body.textContent = sig.text;
+        q.appendChild(body);
+        if (sig.text.length > 160) {
+          const more = document.createElement("button");
+          more.className = "more"; more.type = "button"; more.textContent = "Show more";
+          more.addEventListener("click", () => {
+            const open = q.classList.toggle("clamp") === false;
+            more.textContent = open ? "Show less" : "Show more";
+          });
+          q.appendChild(more);
+        }
+        card.appendChild(q);
+      }
+
+      // ── verdict · score · incumbent ──
+      const meta = document.createElement("div");
+      meta.className = "post-meta";
+      const vCls = isFree ? "free" : (["REAL_GAP", "UNDERCUT", "BUILD_SIMPLE"].includes(verdict) ? "build" : "other");
+      if (verdict) {
+        const v = document.createElement("span");
+        v.className = "verdict " + vCls; v.textContent = verdict.replace(/_/g, " ");
+        meta.appendChild(v);
+      }
+      if (op.pain != null && op.reach != null) {
+        const sc = document.createElement("span");
+        sc.className = "score";
+        sc.innerHTML = "pain <b>" + esc(op.pain) + "</b><span class='x'>×</span>reach <b>" +
+          esc(op.reach) + "</b><span class='x'>=</span><b>" + esc(Number(op.pain) * Number(op.reach)) + "</b>";
+        meta.appendChild(sc);
+      }
+      if (op.incumbent) {
+        const inc = document.createElement("span");
+        inc.className = "incumbent"; inc.textContent = "vs " + op.incumbent;
+        meta.appendChild(inc);
+      }
+      if (meta.children.length) card.appendChild(meta);
+
+      // ── OUTCOME — built / pointed-free / status ──
+      const out = document.createElement("div");
+      out.className = "outcome";
+      if (tool && tool.url) {
+        const a = document.createElement("a");
+        a.className = "built-link"; a.href = tool.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+        a.innerHTML = "Built a tool <span class='arr'>&#8599;</span>";
+        out.appendChild(a);
+        if (tool.price != null) {
+          const p = document.createElement("span");
+          p.className = "built-price"; p.textContent = "£" + Number(tool.price).toFixed(2);
+          out.appendChild(p);
+        }
+        if (tool.used_fallback) {
+          const f = document.createElement("span");
+          f.className = "fallback"; f.textContent = "golden fallback";
+          out.appendChild(f);
+        }
+      } else if (isFree) {
+        const p = document.createElement("div");
+        p.className = "pointed";
+        p.innerHTML = "<span class='lede'>Pointed to a free tool · no charge</span>" +
+          (op.free_pointer ? "<span class='free-text'>" + esc(op.free_pointer) + "</span>" : "");
+        out.appendChild(p);
+      } else {
+        const s = document.createElement("span");
+        s.className = "status-chip"; s.textContent = op.status || "queued";
+        out.appendChild(s);
+      }
+      card.appendChild(out);
+
+      // ── the reply Incline wrote ──
+      const replyText = reply && reply.meta ? reply.meta.text : null;
+      const replyMode = reply && reply.meta ? reply.meta.mode : null;
+      if (replyText) {
+        const r = document.createElement("div");
+        r.className = "reply";
+        const head = document.createElement("div");
+        head.className = "reply-head";
+        head.innerHTML = "<span class='lbl'>Reply Incline wrote</span>" +
+          (replyMode ? "<span class='mode-tag " + (replyMode === "posted" ? "posted" : "draft") + "'>" + esc(replyMode) + "</span>" : "");
+        r.appendChild(head);
+        const rb = document.createElement("div");
+        rb.className = "reply-body clamp"; rb.textContent = replyText;
+        r.appendChild(rb);
+        if (replyText.length > 220) {
+          const more = document.createElement("button");
+          more.className = "more"; more.type = "button"; more.textContent = "Show full reply";
+          more.addEventListener("click", () => {
+            const open = rb.classList.toggle("clamp") === false;
+            more.textContent = open ? "Collapse reply" : "Show full reply";
+          });
+          r.appendChild(more);
+        }
+        card.appendChild(r);
+      }
+
+      // ── link to original post ──
+      if (sig.url) {
+        const foot = document.createElement("div");
+        foot.className = "post-foot";
+        foot.innerHTML = "<a class='orig-link' href='" + esc(sig.url) +
+          "' target='_blank' rel='noopener noreferrer'>view original post <span aria-hidden='true'>&#8599;</span></a>";
+        card.appendChild(foot);
+      }
+
+      return card;
+    }
+
+    async function loadPosts(isLive) {
+      try {
+        const [opsRes, repliesRes] = await Promise.all([
+          supabase
+            .from('opportunities')
+            .select('verdict,status,pain,reach,rationale,free_pointer,incumbent,created_at,signal_id,signals(source,author,text,url,is_primed),tools(url,price,used_fallback,archetype)')
+            .order("created_at", { ascending: false })
+            .limit(50),
+          supabase
+            .from("activity_log")
+            .select("signal_id,meta")
+            .eq("stage", "replied")
+            .order("created_at", { ascending: false })
+            .limit(200),
+        ]);
+
+        if (opsRes.error) { console.warn("opportunities:", opsRes.error.message); return; }
+        const ops = opsRes.data || [];
+
+        // map signal_id → latest reply (results are newest-first, so first wins)
+        const replyBy = new Map();
+        (repliesRes.data || []).forEach((row) => {
+          if (row.signal_id != null && !replyBy.has(row.signal_id)) replyBy.set(row.signal_id, row);
+        });
+
+        // glanceable summary
+        let built = 0, free = 0;
+        ops.forEach((op) => {
+          if (Array.isArray(op.tools) && op.tools.length) built++;
+          if (op.verdict === "POINT_FREE") free++;
+        });
+        $("sum-built").textContent = built;
+        $("sum-free").textContent = free;
+        $("sum-total").textContent = ops.length;
+
+        const list = $("posts-list");
+        list.innerHTML = "";
+        if (!ops.length) {
+          const empty = document.createElement("div");
+          empty.className = "posts-empty";
+          empty.textContent = "listening for the first qualified signal…";
+          list.appendChild(empty);
+          return;
+        }
+        // newest card animates in only on a live refresh
+        ops.forEach((op, i) => {
+          list.appendChild(makePostCard(op, replyBy.get(op.signal_id), isLive && i === 0));
+        });
+      } catch (e) { console.warn("loadPosts failed:", e); }
+    }
+
+    // debounce live refreshes so a burst of stage logs triggers a single re-render
+    let postsTimer = null;
+    function refreshPosts() {
+      clearTimeout(postsTimer);
+      postsTimer = setTimeout(() => loadPosts(true), 500);
+    }
+
     // ── realtime (NOT polling) ──────────────────────────────────────────
     function subscribe() {
       // A real `sales` insert is the ONLY thing that moves the counter.
@@ -433,6 +821,7 @@
           feed.insertBefore(makeFeedLine(payload.new, true), feed.firstChild);
           trimFeed();
           refreshFooter(); // replied/blocked rows move the meters + last-block line
+          refreshPosts();  // new identified posts + outcomes appear live (debounced ~500ms)
         })
         .subscribe();
     }
@@ -441,6 +830,7 @@
     loadSummary(false);
     refreshFooter();
     loadFeed();
+    loadPosts(false);
     subscribe();
   </script>
 </body>
