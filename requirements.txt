@@ -1,0 +1,8 @@
+# Incline — runtime deps. Pinned loosely for a fast hackathon build.
+modal>=0.64
+supabase>=2.4
+openai>=1.40
+requests>=2.31
+fastapi>=0.110
+# praw is optional — the listener defaults to plain Reddit JSON HTTP (no auth).
+praw>=7.7

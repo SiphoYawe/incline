@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Secrets — never commit real keys (the shape is documented in .env.example)
+.env
+*.local
+
+# Vercel
+.vercel/
+dashboard/dist/
+.gstack/
