@@ -1,0 +1,30 @@
+[
+  {
+    "source": "reddit",
+    "source_id": "18osl58",
+    "author": "Calarik",
+    "text": "Need to split a LARGE CSV by a column. Never used Python. What do I need to Download to use Pandas script\n\nHi, please forgive the total neophyte question. I've been meaning to learn and use Python for various projects for a long time, but life has gotten in the way. Today, I have a rather pressing need to split a 10 GB CSV file into pieces I can manipulate easily in a spreadsheet (and perhaps later with Python for data analysis). How do I do this without writing a whole program? I just want to pick a column and get one file per value.",
+    "url": "https://www.reddit.com/r/learnpython/comments/18osl58/need_to_split_a_large_csv_by_a_column_never_used/"
+  },
+  {
+    "source": "reddit",
+    "source_id": "1lm3q33",
+    "author": "shaikhme",
+    "text": "Help Split columns & Sum #'s in a CSV\n\nI have a CSV file that I'd like to sum all numbers in the third column. These numbers include decimals and no symbols. There is no header. I've been struggling using the net, chatgpt, and by trying different actions. I've not been able to successfully do this for about 3 weeks now. Does a tool exist that just lets me upload the CSV, pick a column, and split or total it without code?",
+    "url": "https://www.reddit.com/r/tasker/comments/1lm3q33/help_split_columns_sum_s_in_a_csv/"
+  },
+  {
+    "source": "reddit",
+    "source_id": "1truptc",
+    "author": "capriciouszephyr",
+    "text": "A personal gas/electricity calculator for how much a particular event or period of time cost you personally, not just an average\n\nInputs would be a start and end date, zip code, average miles per day, and average mpg, then it shows the gas prices before and after the period and the overall cost/savings. I couldn't find anything that does this. I wish there was a tool where you just plug in numbers and get an output so people can understand what events affect their pocketbook.",
+    "url": "https://www.reddit.com/r/SomebodyMakeThis/comments/1truptc/a_personal_gaselectricity_calculator_for_how_much/"
+  },
+  {
+    "source": "x",
+    "source_id": "2069355788930338828",
+    "author": "tallxyyy",
+    "text": "Adulthood is just constantly discovering new subscriptions you forgot you were paying for. I wish there was an app that cancels subs for an app you didn't use in 2 months.",
+    "url": "https://x.com/tallxyyy/status/2069355788930338828"
+  }
+]
