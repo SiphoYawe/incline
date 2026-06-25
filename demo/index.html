@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Incline · Live Demo</title>
+<style>
+  /* ════════════════════════════════════════════════════════════════════════
+     Incline · Live Demo - three acts, light-blue editorial register.
+     Self-contained. No external requests. Projector-safe 16:9.
+     Palette + motion vocabulary shared with the Autonomy Dashboard.
+     ════════════════════════════════════════════════════════════════════════ */
+  :root {
+    --bg:        #EEF4FB;  /* soft cool blue-white - the calm ground */
+    --bg-tint:   #E4EDF8;
+    --surface:   #FFFFFF;  /* raised panel */
+    --surface-2: #F8FBFF;  /* whisper blue */
+    --border:    #D8E4F2;  /* hairline */
+    --border-2:  #C6D6EA;
+    --ink:       #112B43;  /* deep navy - primary text */
+    --ink-2:     #2C4861;
+    --slate:     #56697E;  /* secondary text (AA on bg & surface) */
+    --sky:       #3B82F6;  /* primary / listen accent */
+    --sky-ink:   #2F6FE0;  /* sky tuned for small text (AA) */
+    --cobalt:    #1D4ED8;  /* RESERVED - price · pay button · paid/unlocked */
+    --cobalt-deep:#1A43BC;
+    --warn:      #C77D11;
+    --block:     #D64545;
+    --block-ink: #C0392F;
+    --ok:        #1F9D6B;  /* genuine free-help confirmation */
+    --mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    --ease: cubic-bezier(.22,1,.36,1);   /* calm ease-out */
+    --dur:  .28s;
+
+    /* semantic z-scale - never arbitrary 999s */
+    --z-rail:   10;
+    --z-topbar: 20;
+    --z-nav:    30;
+    --z-sheet:  40;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    line-height: 1.5;
+  }
+  /* atmospheric ground - same recipe as the dashboard, fixed so it never scrolls */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(120% 78% at 50% -12%, rgba(255,255,255,0.95), rgba(255,255,255,0) 56%),
+      radial-gradient(90% 60% at 100% 0%, rgba(59,130,246,0.07), rgba(59,130,246,0) 60%);
+  }
+
+  /* ── Top bar (slim, fixed) ─────────────────────────────────────────────── */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-topbar);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 40px;
+    background: rgba(238,244,251,0.86);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: saturate(140%) blur(8px);
+    -webkit-backdrop-filter: saturate(140%) blur(8px);
+  }
+  .wordmark { font-weight: 650; letter-spacing: 0.16em; font-size: 0.9rem; text-transform: uppercase; color: var(--ink); }
+  .wordmark .tag { color: var(--slate); font-weight: 400; letter-spacing: 0.01em; text-transform: none; font-size: 0.88rem; }
+
+  /* step indicator 1 · 2 · 3 */
+  .steps { display: flex; align-items: center; gap: 6px; font-family: var(--mono); }
+  .step {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 999px;
+    border: 1px solid var(--border-2); background: var(--surface);
+    color: var(--slate); font-size: 0.86rem; font-variant-numeric: tabular-nums;
+    cursor: pointer; transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease),
+                                  background var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .step:hover { color: var(--ink-2); border-color: var(--sky); }
+  .step.active { color: #fff; background: var(--sky); border-color: var(--sky); box-shadow: 0 2px 10px rgba(59,130,246,0.32); }
+  .step.done   { color: var(--sky-ink); border-color: var(--sky); }
+  .step.active.paid { background: var(--cobalt); border-color: var(--cobalt); box-shadow: 0 2px 12px rgba(29,78,216,0.38); }
+  .step-sep { color: var(--border-2); font-size: 0.86rem; }
+
+  /* ── Act scaffold: scroll-snap stack ───────────────────────────────────── */
+  main {
+    height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory;
+    position: relative; z-index: 1;
+  }
+  .act {
+    height: 100vh; min-height: 560px; scroll-snap-align: start;
+    display: grid; grid-template-rows: auto minmax(0, 1fr);
+    padding: 88px 40px 78px; position: relative;
+  }
+  .act-head { max-width: 1180px; margin: 0 auto 20px; width: 100%; flex: none; }
+  .act-kicker {
+    font-family: var(--mono); font-size: 0.82rem; letter-spacing: 0.04em;
+    color: var(--sky-ink); font-weight: 600;
+  }
+  .act-kicker .n { color: var(--slate); }
+  .act-title {
+    margin-top: 8px; font-size: clamp(1.7rem, 3.2vw, 2.7rem); line-height: 1.08;
+    letter-spacing: -0.02em; color: var(--ink); font-weight: 640; text-wrap: balance;
+  }
+  .act-narr {
+    margin-top: 12px; max-width: 60ch; color: var(--ink-2);
+    font-size: clamp(1rem, 1.5vw, 1.18rem); line-height: 1.55; text-wrap: pretty;
+  }
+  .act-body {
+    width: 100%; max-width: 1180px; margin: 0 auto; align-self: start;
+    min-height: 0;
+  }
+  /* Act 3: bound the grid to the body row so the results card scrolls internally */
+  #act-2 .act-body { align-self: stretch; height: 100%; display: flex; align-items: stretch; }
+  #act-2 .act3-grid { height: 100%; max-height: 100%; min-height: 0; }
+  #act-2 .tool, #act-2 .results { min-height: 0; max-height: 100%; }
+
+  /* reveal-on-enter - enhances an already-visible default (never gates content) */
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+  .act.in-view .reveal { opacity: 1; transform: none; }
+  .act.in-view .reveal.d1 { transition-delay: .06s; }
+  .act.in-view .reveal.d2 { transition-delay: .14s; }
+  .act.in-view .reveal.d3 { transition-delay: .22s; }
+  .act.in-view .reveal.d4 { transition-delay: .30s; }
+
+  .label {
+    text-transform: uppercase; letter-spacing: 0.14em;
+    font-size: 0.68rem; font-weight: 600; color: var(--slate);
+  }
+
+  /* ── Shared card chrome ────────────────────────────────────────────────── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; box-shadow: 0 1px 2px rgba(17,43,67,0.04), 0 18px 40px -28px rgba(17,43,67,0.22);
+  }
+
+  /* ══════════════ ACT 1 - Reddit-style post ══════════════════════════════ */
+  .act1-grid { display: grid; grid-template-columns: 1fr; gap: 22px; max-width: 760px; margin: 0 auto; }
+  .post { padding: 26px 30px 28px; position: relative; overflow: hidden; }
+  .post-meta {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    font-size: 0.92rem; color: var(--slate); margin-bottom: 16px;
+  }
+  .post-sub { font-weight: 650; color: var(--ink); }
+  .post-dot { color: var(--border-2); }
+  .post-author { color: var(--ink-2); }
+  .post-time { font-family: var(--mono); font-size: 0.84rem; }
+  .post-body {
+    font-size: clamp(1.1rem, 1.9vw, 1.42rem); line-height: 1.5; color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .post-foot {
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .post-stats { display: flex; gap: 20px; color: var(--slate); font-size: 0.9rem; font-family: var(--mono); }
+  .post-stats span { display: inline-flex; align-items: center; gap: 7px; }
+  .heard-marker {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 14px; border-radius: 999px;
+    background: rgba(59,130,246,0.10); color: var(--sky-ink);
+    font-family: var(--mono); font-size: 0.86rem; font-weight: 600; letter-spacing: 0.02em;
+    border: 1px solid rgba(59,130,246,0.22);
+  }
+  .heard-marker .tick { color: var(--ok); font-weight: 700; }
+  .heard-marker .pulse {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--sky);
+    animation: breathe 2.4s ease-in-out infinite;
+  }
+
+  /* the listening thread - a quiet decorative tie between post and marker */
+  .listen-note {
+    text-align: center; color: var(--slate); font-size: 0.94rem;
+    max-width: 56ch; margin: 0 auto;
+  }
+  .listen-note b { color: var(--ink-2); font-weight: 600; }
+
+  /* ══════════════ ACT 2 - value-first reply ══════════════════════════════ */
+  .act2-grid { display: grid; grid-template-columns: 1.25fr 0.85fr; gap: 30px; align-items: start; }
+  .reply { padding: 24px 32px 26px; }
+  .reply-by {
+    display: flex; align-items: center; gap: 9px; margin-bottom: 16px;
+    font-size: 0.92rem; color: var(--slate);
+  }
+  .reply-avatar {
+    width: 26px; height: 26px; border-radius: 7px; flex: none;
+    background: linear-gradient(150deg, var(--sky), var(--cobalt));
+    display: grid; place-items: center; color: #fff; font-weight: 700;
+    font-size: 0.78rem; font-family: var(--mono); letter-spacing: -0.02em;
+  }
+  .reply-by b { color: var(--ink); font-weight: 650; }
+  .reply-by .auto { font-family: var(--mono); font-size: 0.78rem; color: var(--sky-ink);
+    background: rgba(59,130,246,0.10); padding: 3px 9px; border-radius: 6px; }
+
+  /* (1) free answer */
+  .seg { padding-left: 18px; border-left: none; position: relative; }
+  .seg + .seg { margin-top: 16px; }
+  .seg-tag {
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em;
+    text-transform: uppercase; font-weight: 600; color: var(--slate); margin-bottom: 7px;
+  }
+  .seg-1 .seg-tag { color: var(--ok); }
+  .free-answer { font-size: 1rem; line-height: 1.55; color: var(--ink); }
+  .free-answer code {
+    font-family: var(--mono); font-size: 0.92em; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 6px; padding: 1px 7px; color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .free-answer .step-word { color: var(--ink); font-weight: 600; }
+
+  /* (2) disclosure */
+  .disclosure {
+    font-size: 0.96rem; line-height: 1.5; color: var(--ink-2);
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 16px;
+  }
+  .disclosure b { color: var(--ink); font-weight: 650; }
+
+  /* (3) the one soft link */
+  .soft-link {
+    display: block; text-decoration: none; color: inherit;
+    background: var(--surface-2); border: 1px solid var(--border-2);
+    border-radius: 12px; padding: 13px 16px; margin-top: 6px;
+    transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .soft-link:hover { border-color: var(--sky); transform: translateY(-1px); box-shadow: 0 10px 26px -18px rgba(59,130,246,0.5); }
+  .soft-link .frame { font-size: 0.96rem; color: var(--ink-2); line-height: 1.45; }
+  .soft-link .url {
+    margin-top: 8px; display: flex; align-items: center; gap: 9px;
+    font-family: var(--mono); font-size: 0.92rem; color: var(--sky-ink); font-weight: 600;
+  }
+  .soft-link .url .arrow { transition: transform var(--dur) var(--ease); }
+  .soft-link:hover .url .arrow { transform: translateX(4px); }
+
+  /* ethics caption (right rail) */
+  .ethic {
+    padding: 24px 26px; background: var(--surface-2);
+  }
+  .ethic .label { margin-bottom: 14px; }
+  .ethic-line { font-size: 1.02rem; line-height: 1.6; color: var(--ink-2); }
+  .ethic-line .em { color: var(--ink); font-weight: 600; }
+  .ethic-rule { height: 1px; background: var(--border); margin: 20px 0; }
+  .ethic-checks { display: flex; flex-direction: column; gap: 13px; }
+  .ethic-check { display: flex; gap: 11px; align-items: flex-start; font-size: 0.95rem; color: var(--ink-2); }
+  .ethic-check .mk { color: var(--ok); font-weight: 700; flex: none; font-family: var(--mono); }
+
+  /* ══════════════ ACT 3 - gated micro-tool ═══════════════════════════════ */
+  .act3-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 30px; align-items: stretch; }
+  .tool { padding: 26px 30px 28px; display: flex; flex-direction: column; }
+  .tool-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+  .tool-name { font-weight: 650; font-size: 1.06rem; color: var(--ink); letter-spacing: -0.01em; }
+  .tool-name .by { font-family: var(--mono); font-size: 0.74rem; color: var(--slate); font-weight: 500; }
+  .tool-badge { font-family: var(--mono); font-size: 0.72rem; color: var(--slate); letter-spacing: 0.04em;
+    border: 1px solid var(--border); border-radius: 7px; padding: 4px 9px; }
+
+  .field { margin-bottom: 16px; }
+  .field-label { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
+  .field-label .label { letter-spacing: 0.1em; }
+  .sample-btn {
+    font-family: var(--mono); font-size: 0.78rem; color: var(--sky-ink); font-weight: 600;
+    background: none; border: none; cursor: pointer; padding: 2px 4px; border-radius: 5px;
+    transition: color var(--dur) var(--ease);
+  }
+  .sample-btn:hover { color: var(--cobalt); text-decoration: underline; }
+  textarea.csv-in {
+    width: 100%; height: 128px; resize: vertical;
+    font-family: var(--mono); font-size: 0.82rem; line-height: 1.5; color: var(--ink-2);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; outline: none; tab-size: 2;
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  textarea.csv-in::placeholder { color: #8194A8; }
+  textarea.csv-in:focus { border-color: var(--sky); box-shadow: 0 0 0 3px rgba(59,130,246,0.16); }
+
+  .split-row { display: flex; align-items: flex-end; gap: 14px; }
+  .select-wrap { flex: 1; }
+  select.col-sel {
+    width: 100%; appearance: none; -webkit-appearance: none;
+    font-family: var(--mono); font-size: 0.92rem; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--border-2); border-radius: 10px;
+    padding: 11px 38px 11px 14px; cursor: pointer; outline: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' stroke='%2356697E' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  select.col-sel:focus { border-color: var(--sky); box-shadow: 0 0 0 3px rgba(59,130,246,0.16); }
+
+  .btn-run {
+    appearance: none; border: none; cursor: pointer;
+    font-family: var(--sans); font-size: 0.96rem; font-weight: 600; color: #fff;
+    background: var(--sky); border-radius: 10px; padding: 12px 20px;
+    display: inline-flex; align-items: center; gap: 9px; white-space: nowrap;
+    box-shadow: 0 2px 10px rgba(59,130,246,0.3);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn-run:hover { background: #2F76EE; box-shadow: 0 6px 18px rgba(59,130,246,0.4); }
+  .btn-run:active { transform: translateY(1px); }
+  .btn-run:disabled { background: #9DB6DC; cursor: default; box-shadow: none; transform: none; }
+  .btn-run .arrow { transition: transform var(--dur) var(--ease); }
+  .btn-run:not(:disabled):hover .arrow { transform: translateX(3px); }
+
+  /* working state line */
+  .working {
+    margin-top: 18px; min-height: 22px; font-family: var(--mono); font-size: 0.88rem;
+    color: var(--slate); display: flex; align-items: center; gap: 10px;
+  }
+  .working .spin {
+    width: 11px; height: 11px; border-radius: 50%;
+    border: 2px solid rgba(59,130,246,0.25); border-top-color: var(--sky);
+    animation: spin .7s linear infinite;
+  }
+  .working b { color: var(--ink-2); font-weight: 600; }
+
+  /* ── results panel (right column) ──────────────────────────────────────── */
+  .results { padding: 26px 30px 28px; display: flex; flex-direction: column; max-height: 100%; }
+  .results-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex: none; }
+  .results-head .label { letter-spacing: 0.1em; }
+  .results-head .count { font-family: var(--mono); font-size: 0.84rem; color: var(--slate); }
+
+  /* groups scroll internally so the gate + paid line stay anchored & on-screen */
+  .results-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -8px; padding: 0 8px; }
+  .results-scroll::-webkit-scrollbar { width: 8px; }
+  .results-scroll::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 8px; }
+  .results-scroll { scrollbar-width: thin; scrollbar-color: var(--border-2) transparent; }
+
+  .results-empty {
+    flex: 1; display: grid; place-items: center; text-align: center;
+    color: var(--slate); font-size: 0.96rem; line-height: 1.55; padding: 30px 10px;
+  }
+  .results-empty .glyph {
+    width: 46px; height: 46px; margin: 0 auto 14px; border-radius: 12px;
+    border: 1px dashed var(--border-2); display: grid; place-items: center;
+    color: var(--border-2); font-family: var(--mono); font-size: 1.2rem;
+  }
+
+  .groups { display: flex; flex-direction: column; gap: 12px; }
+  .group {
+    border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+    background: var(--surface-2);
+    animation: rise .5s var(--ease) both;
+  }
+  .group-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 11px 16px; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .group-name { font-family: var(--mono); font-weight: 650; font-size: 0.96rem; color: var(--ink); }
+  .group-rows { font-family: var(--mono); font-size: 0.84rem; color: var(--slate); font-variant-numeric: tabular-nums; }
+  .group-flag {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase;
+    font-weight: 600; padding: 3px 8px; border-radius: 6px;
+  }
+  .group.preview .group-flag { color: var(--ok); background: rgba(31,157,107,0.12); }
+  .group.locked .group-flag { color: var(--slate); background: var(--bg-tint); }
+  .group.unlocked .group-flag { color: var(--cobalt); background: rgba(29,78,216,0.10); }
+
+  /* real preview rows */
+  .group-rows-table {
+    font-family: var(--mono); font-size: 0.78rem; color: var(--ink-2);
+    padding: 6px 16px 12px;
+  }
+  .gr-line {
+    display: grid; grid-template-columns: 1.4fr 0.9fr 0.7fr; gap: 12px;
+    padding: 4px 0; border-bottom: 1px solid var(--border);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .gr-line:last-child { border-bottom: none; }
+  .gr-line.head { color: var(--slate); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .gr-line span { overflow: hidden; text-overflow: ellipsis; }
+  .gr-more { padding: 6px 16px 2px; font-family: var(--mono); font-size: 0.76rem; color: var(--slate); }
+
+  /* locked - blurred but shape visible (kept compact so the gate stays on-screen) */
+  .group.locked .group-veil {
+    position: relative; padding: 13px 16px; display: grid; gap: 6px;
+  }
+  .veil-row {
+    height: 8px; border-radius: 4px;
+    background: linear-gradient(90deg, var(--bg-tint), #E9F0FA);
+    filter: blur(2px); opacity: 0.85;
+  }
+  .veil-row:nth-child(2) { width: 78%; }
+  .veil-row:nth-child(3) { width: 64%; }
+  .lock-chip {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 0.8rem; color: var(--slate); font-weight: 600;
+    background: rgba(255,255,255,0.92); border: 1px solid var(--border-2);
+    border-radius: 999px; padding: 6px 13px; backdrop-filter: blur(2px);
+  }
+  .lock-chip svg { display: block; }
+
+  /* ── the gate (price + pay) ────────────────────────────────────────────── */
+  .gate {
+    margin-top: auto; padding-top: 20px;
+  }
+  .gate-rule { height: 1px; background: var(--border); margin-bottom: 18px; }
+  .price-line { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+  .price { font-family: var(--mono); font-size: 2.1rem; font-weight: 600; color: var(--cobalt);
+    letter-spacing: -0.01em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .price-note { font-size: 0.92rem; color: var(--slate); }
+  .btn-pay {
+    width: 100%; appearance: none; border: none; cursor: pointer;
+    font-family: var(--sans); font-size: 1.02rem; font-weight: 650; color: #fff;
+    background: var(--cobalt); border-radius: 11px; padding: 15px 20px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 11px;
+    box-shadow: 0 3px 14px rgba(29,78,216,0.34);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn-pay:hover { background: var(--cobalt-deep); box-shadow: 0 8px 24px rgba(29,78,216,0.44); }
+  .btn-pay:active { transform: translateY(1px); }
+  .btn-pay:disabled { opacity: 0.7; cursor: default; transform: none; }
+  .btn-pay .pp { font-weight: 700; letter-spacing: 0.01em; }
+  .btn-pay .pp i { font-style: italic; }
+  .btn-pay .pp .pp1 { color: #fff; opacity: 0.96; }
+  .sandbox-note { margin-top: 11px; text-align: center; font-family: var(--mono);
+    font-size: 0.8rem; color: var(--slate); letter-spacing: 0.01em; }
+
+  /* paid / unlocked state */
+  .paid-state { display: none; }
+  .paid-state.show { display: block; animation: rise .55s var(--ease) both; }
+  .paid-banner {
+    display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+    background: rgba(29,78,216,0.07); border: 1px solid rgba(29,78,216,0.20);
+    border-radius: 12px; margin-bottom: 14px;
+  }
+  .paid-banner .ck {
+    width: 30px; height: 30px; border-radius: 50%; flex: none;
+    background: var(--cobalt); color: #fff; display: grid; place-items: center;
+  }
+  .paid-banner .txt b { color: var(--cobalt); font-weight: 700; display: block; font-size: 0.98rem; }
+  .paid-banner .txt span { color: var(--ink-2); font-size: 0.9rem; }
+  .btn-download {
+    width: 100%; appearance: none; cursor: pointer;
+    font-family: var(--sans); font-size: 0.98rem; font-weight: 600; color: var(--cobalt);
+    background: var(--surface); border: 1px solid var(--cobalt); border-radius: 11px; padding: 13px 20px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .btn-download:hover { background: rgba(29,78,216,0.06); }
+  .btn-download:active { transform: translateY(1px); }
+  .download-hint { margin-top: 10px; text-align: center; font-family: var(--mono); font-size: 0.78rem; color: var(--slate); }
+
+  /* ── sandbox checkout sheet (modal beat) ───────────────────────────────── */
+  .sheet-backdrop {
+    position: fixed; inset: 0; z-index: var(--z-sheet);
+    background: rgba(17,43,67,0.40); backdrop-filter: blur(3px);
+    display: none; place-items: center; padding: 24px;
+  }
+  .sheet-backdrop.show { display: grid; animation: fade .3s var(--ease) both; }
+  .sheet {
+    width: min(420px, 92vw); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 18px; overflow: hidden;
+    box-shadow: 0 40px 90px -30px rgba(17,43,67,0.5);
+    transform: translateY(8px); animation: rise .36s var(--ease) both;
+  }
+  .sheet-top {
+    padding: 18px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface-2);
+  }
+  .sheet-pp { font-weight: 800; font-size: 1.04rem; letter-spacing: -0.01em; }
+  .sheet-pp .a { color: #003087; } .sheet-pp .b { color: #0070E0; }
+  .sheet-secure { font-family: var(--mono); font-size: 0.72rem; color: var(--slate);
+    display: inline-flex; align-items: center; gap: 6px; }
+  .sheet-body { padding: 24px; }
+  .sheet-merchant { font-size: 0.88rem; color: var(--slate); margin-bottom: 4px; }
+  .sheet-amount { font-family: var(--mono); font-size: 2rem; font-weight: 600; color: var(--ink);
+    letter-spacing: -0.01em; margin-bottom: 18px; font-variant-numeric: tabular-nums; }
+  .sheet-acct {
+    display: flex; align-items: center; gap: 12px; padding: 13px 14px;
+    border: 1px solid var(--border); border-radius: 11px; margin-bottom: 18px; background: var(--surface-2);
+  }
+  .sheet-acct .av { width: 34px; height: 34px; border-radius: 50%; flex: none;
+    background: linear-gradient(150deg, #0070E0, #003087); color: #fff;
+    display: grid; place-items: center; font-weight: 700; font-family: var(--mono); font-size: 0.84rem; }
+  .sheet-acct .who b { display: block; color: var(--ink); font-size: 0.94rem; }
+  .sheet-acct .who span { color: var(--slate); font-size: 0.82rem; font-family: var(--mono); }
+  .sheet-pay {
+    width: 100%; appearance: none; border: none; cursor: pointer;
+    font-family: var(--sans); font-size: 1rem; font-weight: 700; color: #fff;
+    background: #0070E0; border-radius: 999px; padding: 14px;
+    transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .sheet-pay:hover { background: #005EC2; }
+  .sheet-pay:active { transform: translateY(1px); }
+  .sheet-pay:disabled { opacity: 0.85; cursor: default; }
+  .sheet-pay.processing { background: #4C8CD8; }
+  .sheet-foot { text-align: center; margin-top: 14px; font-family: var(--mono);
+    font-size: 0.74rem; color: var(--slate); }
+
+  /* ── Nav control (calm Next) ───────────────────────────────────────────── */
+  .navbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-nav);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 40px;
+    background: linear-gradient(0deg, var(--bg) 38%, rgba(238,244,251,0.92) 70%, rgba(238,244,251,0));
+  }
+  .foot-links { font-size: 0.84rem; color: var(--slate); }
+  .foot-links a { color: var(--sky-ink); text-decoration: none; font-weight: 500; }
+  .foot-links a:hover { text-decoration: underline; }
+  .foot-links .sep { color: var(--border-2); margin: 0 8px; }
+  .nav-ctrls { display: flex; align-items: center; gap: 12px; }
+  .btn-nav {
+    appearance: none; cursor: pointer; font-family: var(--sans);
+    font-size: 0.94rem; font-weight: 600; border-radius: 10px; padding: 11px 20px;
+    display: inline-flex; align-items: center; gap: 9px;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+                background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  }
+  .btn-back {
+    background: var(--surface); color: var(--ink-2); border: 1px solid var(--border-2);
+  }
+  .btn-back:hover { border-color: var(--sky); color: var(--ink); }
+  .btn-back:disabled { opacity: 0.4; cursor: default; }
+  .btn-next {
+    background: var(--ink); color: #fff; border: 1px solid var(--ink);
+    box-shadow: 0 3px 12px rgba(17,43,67,0.24);
+  }
+  .btn-next:hover { background: #0C2236; transform: translateY(-1px); }
+  .btn-next:active { transform: translateY(0); }
+  .btn-next .arrow { transition: transform var(--dur) var(--ease); }
+  .btn-next:hover .arrow { transform: translateX(4px); }
+  .btn-next.replay { background: var(--cobalt); border-color: var(--cobalt); box-shadow: 0 3px 12px rgba(29,78,216,0.3); }
+  .btn-next.replay:hover { background: var(--cobalt-deep); }
+
+  /* ── keyframes (shared vocabulary) ─────────────────────────────────────── */
+  @keyframes breathe {
+    0%,100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.30); opacity: 1; }
+    50%     { box-shadow: 0 0 0 6px rgba(59,130,246,0);   opacity: 0.5; }
+  }
+  @keyframes rise   { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes fade   { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes spin   { to { transform: rotate(360deg); } }
+  @keyframes salePulse { 0% { transform: scale(1); } 35% { transform: scale(1.05); } 100% { transform: scale(1); } }
+  .price.tick { animation: salePulse 640ms var(--ease); }
+
+  /* ── reduced motion ────────────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
+    .reveal { opacity: 1 !important; transform: none !important; }
+  }
+
+  /* ── narrow / portrait safety (projectors are 16:9 but be graceful) ────── */
+  @media (max-width: 880px) {
+    .act2-grid, .act3-grid { grid-template-columns: 1fr; }
+    .act { padding: 86px 22px 92px; }
+    .topbar, .navbar { padding-left: 22px; padding-right: 22px; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ── Top bar ─────────────────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="wordmark">INCLINE <span class="tag">· the business that inclines its ear</span></div>
+    <nav class="steps" id="steps" aria-label="Demo steps">
+      <button class="step active" data-step="0" aria-label="Act 1">1</button>
+      <span class="step-sep">·</span>
+      <button class="step" data-step="1" aria-label="Act 2">2</button>
+      <span class="step-sep">·</span>
+      <button class="step" data-step="2" aria-label="Act 3">3</button>
+    </nav>
+  </header>
+
+  <main id="main">
+
+    <!-- ══════════ ACT 1 - Hear the demand ══════════════════════════════════ -->
+    <section class="act" id="act-0" data-step="0">
+      <div class="act-head">
+        <div class="act-kicker reveal"><span class="n">Act 1 ·</span> Hear the demand</div>
+        <h1 class="act-title reveal d1">It starts by listening for a real, specific need.</h1>
+        <p class="act-narr reveal d2">No keyword spam, no broadcast. One person describing one painful, repeated task, in their own words.</p>
+      </div>
+      <div class="act-body">
+        <div class="act1-grid">
+          <article class="post card reveal d2" aria-label="Reddit post">
+            <div class="post-meta">
+              <span class="post-sub">r/spreadsheets</span>
+              <span class="post-dot">·</span>
+              <span>Posted by</span>
+              <span class="post-author">u/dana_kp</span>
+              <span class="post-dot">·</span>
+              <span class="post-time">3m ago</span>
+            </div>
+            <p class="post-body">
+              I wish there was a tool to split a CSV by column. I keep getting one giant
+              export and have to make a file per region by hand every week.
+            </p>
+            <div class="post-foot">
+              <div class="post-stats">
+                <span aria-hidden="true">&#9650; 24</span>
+                <span>9 comments</span>
+                <span>share</span>
+              </div>
+              <span class="heard-marker"><span class="pulse"></span>heard <span class="tick">&#10003;</span></span>
+            </div>
+          </article>
+          <p class="listen-note reveal d3">
+            Incline read this thread the moment it was posted. <b>It heard a real need</b>,
+            not a marketing opportunity.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ ACT 2 - Help first, sell second ════════════════════════════ -->
+    <section class="act" id="act-1" data-step="1">
+      <div class="act-head">
+        <div class="act-kicker reveal"><span class="n">Act 2 ·</span> Help first, sell second</div>
+        <h1 class="act-title reveal d1">A reply that helps even if they never click.</h1>
+        <p class="act-narr reveal d2">The free answer stands on its own. One honest disclosure. Exactly one soft link. No urgency.</p>
+      </div>
+      <div class="act-body">
+        <div class="act2-grid">
+          <article class="reply card reveal d2" aria-label="Incline reply">
+            <div class="reply-by">
+              <span class="reply-avatar">in</span>
+              <b>Incline</b>
+              <span class="auto">automated builder</span>
+            </div>
+
+            <!-- (1) genuinely useful free answer -->
+            <div class="seg seg-1">
+              <div class="seg-tag">A free answer that stands alone</div>
+              <p class="free-answer">
+                You can do this without a tool. <span class="step-word">Open the CSV in Sheets</span>,
+                use <code>=FILTER(A:C, B:B="North")</code> per region, then
+                <span class="step-word">File &rarr; Download</span> each tab as CSV. That covers a one-off.
+              </p>
+            </div>
+
+            <!-- (2) plain disclosure -->
+            <div class="seg seg-2">
+              <div class="seg-tag">One plain disclosure</div>
+              <p class="disclosure">
+                <b>I'm Incline, an automated builder.</b> I heard this thread and made a small
+                tool for exactly this.
+              </p>
+            </div>
+
+            <!-- (3) exactly one soft link -->
+            <div class="seg seg-3">
+              <div class="seg-tag">Exactly one soft link</div>
+              <a class="soft-link" href="#act-2" id="soft-link">
+                <span class="frame">If you'd rather just drop the file and get all the splits back, this does it in one step.</span>
+                <span class="url">incline.tools/csv-splitter <span class="arrow" aria-hidden="true">&rarr;</span></span>
+              </a>
+            </div>
+          </article>
+
+          <aside class="ethic card reveal d3" aria-label="The ethic">
+            <span class="label">The ethic</span>
+            <p class="ethic-line">
+              The free answer is useful <span class="em">even if they never click</span>.
+              That's the whole point. Help is the product; the link is optional.
+            </p>
+            <div class="ethic-rule"></div>
+            <div class="ethic-checks">
+              <div class="ethic-check"><span class="mk">&#10003;</span><span>Real, working steps anyone can follow today</span></div>
+              <div class="ethic-check"><span class="mk">&#10003;</span><span>Discloses it's automated, in plain language</span></div>
+              <div class="ethic-check"><span class="mk">&#10003;</span><span>One link, framed softly, no countdown, no emoji</span></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ ACT 3 - The gated micro-tool ═══════════════════════════════ -->
+    <section class="act" id="act-2" data-step="2">
+      <div class="act-head">
+        <div class="act-kicker reveal"><span class="n">Act 3 ·</span> The gated micro-tool</div>
+        <h1 class="act-title reveal d1">A real tool, with a fair little gate.</h1>
+        <p class="act-narr reveal d2">First split free as a true preview. The rest unlock with a tiny payment. Real CSV, real math.</p>
+      </div>
+      <div class="act-body">
+        <div class="act3-grid">
+
+          <!-- working splitter -->
+          <article class="tool card reveal d2" aria-label="CSV column splitter">
+            <div class="tool-head">
+              <div class="tool-name">CSV Column Splitter <span class="by">· built by Incline</span></div>
+              <span class="tool-badge">v1</span>
+            </div>
+
+            <div class="field">
+              <div class="field-label">
+                <span class="label">Your CSV</span>
+                <button class="sample-btn" id="sample-btn" type="button">use sample &#8631;</button>
+              </div>
+              <textarea class="csv-in" id="csv-in" spellcheck="false"
+                placeholder="Paste a CSV with a header row, or press &quot;use sample&quot;."></textarea>
+            </div>
+
+            <div class="field">
+              <div class="field-label"><span class="label">Split by column</span></div>
+              <div class="split-row">
+                <div class="select-wrap">
+                  <select class="col-sel" id="col-sel" aria-label="Column to split by">
+                    <option value="Region">Region</option>
+                  </select>
+                </div>
+                <button class="btn-run" id="run-btn" type="button">
+                  Run it on my file <span class="arrow" aria-hidden="true">&rarr;</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="working" id="working" role="status" aria-live="polite"></div>
+          </article>
+
+          <!-- results + gate -->
+          <article class="results card reveal d3" aria-label="Split results">
+            <div class="results-head">
+              <span class="label">Result</span>
+              <span class="count" id="result-count"></span>
+            </div>
+
+            <div class="results-scroll">
+              <div class="results-empty" id="results-empty">
+                <div>
+                  <div class="glyph" aria-hidden="true">&#9776;</div>
+                  Press <b>Run it on my file</b> to split the export.<br>
+                  The first group is free to preview.
+                </div>
+              </div>
+
+              <div class="groups" id="groups" style="display:none"></div>
+            </div>
+
+            <!-- the gate -->
+            <div class="gate" id="gate" style="display:none">
+              <div class="gate-rule"></div>
+
+              <!-- locked / pre-pay -->
+              <div class="gate-pay" id="gate-pay">
+                <div class="price-line">
+                  <span class="price" id="price">&pound;9</span>
+                  <span class="price-note">unlock the remaining <span id="locked-n">3</span> files &amp; download all</span>
+                </div>
+                <button class="btn-pay" id="pay-btn" type="button">
+                  Unlock &amp; download
+                  <span class="pp"><span class="pp1">Pay</span><i>Pal</i></span>
+                </button>
+                <p class="sandbox-note">PayPal sandbox · full flow, no real charge.</p>
+              </div>
+
+              <!-- unlocked / paid -->
+              <div class="paid-state" id="paid-state">
+                <div class="paid-banner">
+                  <span class="ck" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 8l3 3 6-7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </span>
+                  <span class="txt">
+                    <b>Unlocked.</b>
+                    <span>Thanks. That paid for the tool that heard you.</span>
+                  </span>
+                </div>
+                <button class="btn-download" id="download-btn" type="button">
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M7.5 1v9m0 0L4 6.5M7.5 10 11 6.5M2 13h11" stroke="#1D4ED8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Download all <span id="dl-n">4</span> files (.zip)
+                </button>
+                <p class="download-hint" id="dl-hint"></p>
+              </div>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── sandbox checkout sheet ──────────────────────────────────────────── -->
+  <div class="sheet-backdrop" id="sheet-backdrop" role="dialog" aria-modal="true" aria-label="PayPal sandbox checkout">
+    <div class="sheet">
+      <div class="sheet-top">
+        <span class="sheet-pp"><span class="a">Pay</span><span class="b">Pal</span></span>
+        <span class="sheet-secure">
+          <svg width="11" height="13" viewBox="0 0 11 13" fill="none" aria-hidden="true"><path d="M2 6V4a3.5 3.5 0 0 1 7 0v2" stroke="#56697E" stroke-width="1.2"/><rect x="1" y="6" width="9" height="6" rx="1.4" stroke="#56697E" stroke-width="1.2"/></svg>
+          sandbox
+        </span>
+      </div>
+      <div class="sheet-body">
+        <div class="sheet-merchant">Pay Incline Tools</div>
+        <div class="sheet-amount">&pound;9.00 GBP</div>
+        <div class="sheet-acct">
+          <span class="av">dk</span>
+          <span class="who">
+            <b>dana_kp@example.com</b>
+            <span>Visa ·· 4421 · sandbox</span>
+          </span>
+        </div>
+        <button class="sheet-pay" id="sheet-pay" type="button">Pay £9.00 now</button>
+        <p class="sheet-foot">No real charge. This is a PayPal sandbox transaction.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── nav control + footer links ──────────────────────────────────────── -->
+  <nav class="navbar">
+    <div class="foot-links">
+      Live dashboard
+      <span class="sep">·</span>
+      <a href="https://incline-kappa.vercel.app" target="_blank" rel="noopener">incline-kappa.vercel.app</a>
+    </div>
+    <div class="nav-ctrls">
+      <button class="btn-nav btn-back" id="back-btn" type="button" disabled>&larr; Back</button>
+      <button class="btn-nav btn-next" id="next-btn" type="button">Next <span class="arrow" aria-hidden="true">&rarr;</span></button>
+    </div>
+  </nav>
+
+<script>
+"use strict";
+(function () {
+  // ───────────────────────────────────────────────────────────────────────
+  //  Sample data - a realistic regional export. Numbers are mock by design.
+  //  Generated deterministically so "1,204 rows · 4 values" is always true.
+  // ───────────────────────────────────────────────────────────────────────
+  var REGIONS = ["North", "South", "East", "West"];
+  // target counts that sum to 1204 and match the working-state copy
+  var TARGET = { North: 312, South: 289, East: 301, West: 302 };
+
+  var FIRST = ["Avery","Dana","Priya","Marco","Lena","Tobias","Iris","Noor","Wren","Kai",
+               "Sasha","Mina","Otis","Rafi","Yael","Cleo","Hugo","Nadia","Ezra","Tamsin"];
+  var LAST  = ["Okoro","Vance","Reyes","Lindqvist","Haddad","Moreau","Sato","Bauer","Costa","Nkemdirim"];
+  var STATUS = ["active","trial","churned","active","active","trial"];
+
+  // Build a deterministic sample CSV with exactly TARGET rows per region.
+  function buildSampleRows() {
+    var rows = [];
+    var seed = 7; // deterministic pseudo-random
+    function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+    REGIONS.forEach(function (region) {
+      for (var i = 0; i < TARGET[region]; i++) {
+        var name = FIRST[Math.floor(rnd() * FIRST.length)] + " " + LAST[Math.floor(rnd() * LAST.length)];
+        var mrr  = (18 + Math.floor(rnd() * 240));
+        var status = STATUS[Math.floor(rnd() * STATUS.length)];
+        rows.push({ Customer: name, Region: region, MRR: mrr, Status: status });
+      }
+    });
+    // light shuffle so regions are interleaved like a real export
+    for (var k = rows.length - 1; k > 0; k--) {
+      var j = Math.floor(rnd() * (k + 1));
+      var t = rows[k]; rows[k] = rows[j]; rows[j] = t;
+    }
+    return rows;
+  }
+
+  var SAMPLE_ROWS = buildSampleRows();
+  var HEADERS = ["Customer", "Region", "MRR", "Status"];
+
+  // A small, legible CSV string for the textarea (first 6 rows + a truthful note).
+  function sampleCsvText() {
+    var lines = [HEADERS.join(",")];
+    for (var i = 0; i < 6; i++) {
+      var r = SAMPLE_ROWS[i];
+      lines.push([r.Customer, r.Region, r.MRR, r.Status].join(","));
+    }
+    lines.push("… " + (SAMPLE_ROWS.length - 6).toLocaleString() + " more rows (full export loaded)");
+    return lines.join("\n");
+  }
+
+  // ── tiny DOM helpers ────────────────────────────────────────────────────
+  var $ = function (id) { return document.getElementById(id); };
+  var prefersReduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  // ───────────────────────────────────────────────────────────────────────
+  //  Act navigation: scroll-snap + step indicator + Next/Back + keyboard.
+  // ───────────────────────────────────────────────────────────────────────
+  var main = $("main");
+  var acts = [$("act-0"), $("act-1"), $("act-2")];
+  var stepBtns = Array.prototype.slice.call(document.querySelectorAll(".step"));
+  var stepSeps = Array.prototype.slice.call(document.querySelectorAll(".step-sep"));
+  var nextBtn = $("next-btn");
+  var backBtn = $("back-btn");
+  var current = 0;
+  var paid = false;
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(acts.length - 1, i));
+    acts[i].scrollIntoView({ behavior: prefersReduced ? "auto" : "smooth" });
+  }
+
+  function setActive(i) {
+    if (i === current) return;
+    current = i;
+    syncChrome();
+  }
+
+  function syncChrome() {
+    stepBtns.forEach(function (b, idx) {
+      b.classList.toggle("active", idx === current);
+      b.classList.toggle("done", idx < current);
+      b.classList.toggle("paid", idx === 2 && paid && current === 2);
+    });
+    backBtn.disabled = current === 0;
+    if (current === acts.length - 1) {
+      nextBtn.innerHTML = 'Replay <span class="arrow" aria-hidden="true">&#8635;</span>';
+      nextBtn.classList.toggle("replay", paid);
+    } else {
+      nextBtn.innerHTML = 'Next <span class="arrow" aria-hidden="true">&rarr;</span>';
+      nextBtn.classList.remove("replay");
+    }
+  }
+
+  // reveal + active-act tracking via IntersectionObserver (no scroll listener)
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        e.target.classList.add("in-view");
+        setActive(acts.indexOf(e.target));
+      }
+    });
+  }, { threshold: 0.55 });
+  acts.forEach(function (a) { io.observe(a); });
+
+  nextBtn.addEventListener("click", function () {
+    if (current === acts.length - 1) { resetDemo(); goTo(0); }
+    else goTo(current + 1);
+  });
+  backBtn.addEventListener("click", function () { goTo(current - 1); });
+  stepBtns.forEach(function (b) {
+    b.addEventListener("click", function () { goTo(parseInt(b.getAttribute("data-step"), 10)); });
+  });
+
+  // keyboard advance - projector-friendly (arrows / space / pgdn)
+  document.addEventListener("keydown", function (ev) {
+    if ($("sheet-backdrop").classList.contains("show")) {
+      if (ev.key === "Escape") closeSheet();
+      return;
+    }
+    if (ev.key === "ArrowRight" || ev.key === "PageDown") { ev.preventDefault(); goTo(current + 1); }
+    else if (ev.key === "ArrowLeft" || ev.key === "PageUp") { ev.preventDefault(); goTo(current - 1); }
+  });
+
+  // the soft link in Act 2 advances to Act 3 (it's an in-page anchor)
+  $("soft-link").addEventListener("click", function () { /* native #anchor handles scroll */ });
+
+  // ───────────────────────────────────────────────────────────────────────
+  //  Act 3 - the working splitter.
+  // ───────────────────────────────────────────────────────────────────────
+  var csvIn = $("csv-in");
+  var colSel = $("col-sel");
+  var runBtn = $("run-btn");
+  var working = $("working");
+  var groupsEl = $("groups");
+  var emptyEl = $("results-empty");
+  var gateEl = $("gate");
+  var resultCount = $("result-count");
+
+  var lastSplit = null; // { col, order:[name], groups:{name:[rows]} , headers }
+
+  // Parse a CSV (simple, quote-aware) into {headers, rows}. For the sample we
+  // bypass the truncated textarea and use the full in-memory dataset.
+  function parseCsv(text) {
+    var lines = text.replace(/\r\n/g, "\n").split("\n").filter(function (l) { return l.trim() !== ""; });
+    if (!lines.length) return { headers: [], rows: [] };
+    var headers = splitLine(lines[0]);
+    var rows = [];
+    for (var i = 1; i < lines.length; i++) {
+      if (/more rows/.test(lines[i])) continue; // skip the human note line
+      var cells = splitLine(lines[i]);
+      if (cells.length < 2) continue;
+      var obj = {};
+      headers.forEach(function (h, idx) { obj[h] = cells[idx] !== undefined ? cells[idx] : ""; });
+      rows.push(obj);
+    }
+    return { headers: headers, rows: rows };
+  }
+  function splitLine(line) {
+    var out = [], cur = "", q = false;
+    for (var i = 0; i < line.length; i++) {
+      var c = line[i];
+      if (c === '"') { q = !q; }
+      else if (c === "," && !q) { out.push(cur.trim()); cur = ""; }
+      else { cur += c; }
+    }
+    out.push(cur.trim());
+    return out;
+  }
+
+  // Group rows by a column → ordered map.
+  function splitBy(rows, headers, col) {
+    var groups = {}, order = [];
+    rows.forEach(function (r) {
+      var key = r[col] !== undefined && r[col] !== "" ? r[col] : "(blank)";
+      if (!groups[key]) { groups[key] = []; order.push(key); }
+      groups[key].push(r);
+    });
+    // present in a stable, sensible order (sample → N,S,E,W)
+    order.sort(function (a, b) {
+      var pa = REGIONS.indexOf(a), pb = REGIONS.indexOf(b);
+      if (pa !== -1 && pb !== -1) return pa - pb;
+      if (pa !== -1) return -1; if (pb !== -1) return 1;
+      return groups[b].length - groups[a].length;
+    });
+    return { col: col, order: order, groups: groups, headers: headers };
+  }
+
+  // Populate the column selector from real headers (skip the name/number cols
+  // that don't make sensible split keys, but always offer them all).
+  function refreshColumns(headers) {
+    var prev = colSel.value;
+    colSel.innerHTML = "";
+    headers.forEach(function (h) {
+      var o = document.createElement("option");
+      o.value = h; o.textContent = h;
+      colSel.appendChild(o);
+    });
+    // default to a low-cardinality column when present
+    var preferred = ["Region", "Status"].filter(function (h) { return headers.indexOf(h) !== -1; })[0];
+    colSel.value = headers.indexOf(prev) !== -1 ? prev : (preferred || headers[0]);
+  }
+
+  // Load the sample into the textarea + columns.
+  function loadSample() {
+    csvIn.value = sampleCsvText();
+    refreshColumns(HEADERS);
+    colSel.value = "Region";
+    resetResults();
+  }
+
+  function resetResults() {
+    groupsEl.style.display = "none";
+    groupsEl.innerHTML = "";
+    gateEl.style.display = "none";
+    emptyEl.style.display = "grid";
+    resultCount.textContent = "";
+    working.innerHTML = "";
+    lastSplit = null;
+    paid = false;
+    $("gate-pay").style.display = "";
+    $("paid-state").classList.remove("show");
+    syncChrome();
+  }
+
+  $("sample-btn").addEventListener("click", loadSample);
+
+  // ── the run sequence (specific working state, then real preview + locks) ──
+  var running = false;
+  runBtn.addEventListener("click", function () {
+    if (running) return;
+
+    // Decide the dataset: if the textarea still holds our sample, use the full
+    // in-memory rows (the textarea is intentionally truncated for legibility).
+    var col = colSel.value || "Region";
+    var dataset, headers;
+    var typed = csvIn.value.trim();
+    var looksLikeSample = typed === "" || /full export loaded|more rows/.test(typed) || typed === sampleCsvText().trim();
+
+    if (looksLikeSample) {
+      if (typed === "") loadSample();
+      dataset = SAMPLE_ROWS.slice();
+      headers = HEADERS;
+      if (headers.indexOf(col) === -1) col = "Region";
+    } else {
+      var parsed = parseCsv(typed);
+      if (!parsed.rows.length) {
+        working.innerHTML = '<b style="color:var(--block-ink)">No rows found.</b> Press “use sample” to try it instantly.';
+        return;
+      }
+      dataset = parsed.rows; headers = parsed.headers;
+      if (headers.indexOf(col) === -1) col = headers[0];
+      refreshColumns(headers); colSel.value = col;
+    }
+
+    var result = splitBy(dataset, headers, col);
+    var nValues = result.order.length;
+    var total = dataset.length;
+
+    running = true;
+    runBtn.disabled = true;
+    groupsEl.style.display = "none";
+    emptyEl.style.display = "grid";
+    gateEl.style.display = "none";
+
+    // staged, specific working line (one moving element)
+    var stages = [
+      'read ' + total.toLocaleString() + ' rows…',
+      'read ' + total.toLocaleString() + ' rows · found ' + nValues + ' values in “' + col + '”…',
+      'read ' + total.toLocaleString() + ' rows · found ' + nValues + ' values in “' + col + '” · building ' + nValues + ' files…'
+    ];
+    var si = 0;
+    function showStage() {
+      working.innerHTML = '<span class="spin"></span><b>' + stages[si] + '</b>';
+    }
+    showStage();
+
+    var stepMs = prefersReduced ? 80 : 520;
+    var iv = setInterval(function () {
+      si++;
+      if (si < stages.length) showStage();
+      else {
+        clearInterval(iv);
+        finishRun(result, total, nValues, col);
+      }
+    }, stepMs);
+  });
+
+  function finishRun(result, total, nValues, col) {
+    working.innerHTML = '<b style="color:var(--ok)">&#10003; ' + nValues + ' files ready.</b> First group is free to preview.';
+    renderGroups(result);
+    lastSplit = result;
+    running = false;
+    runBtn.disabled = false;
+    resultCount.textContent = total.toLocaleString() + " rows · " + nValues + " groups";
+    // jump the gate counts
+    $("locked-n").textContent = (nValues - 1);
+    $("dl-n").textContent = nValues;
+  }
+
+  // Render: first group as a true preview (real rows), the rest locked.
+  function renderGroups(result) {
+    emptyEl.style.display = "none";
+    groupsEl.style.display = "flex";
+    groupsEl.innerHTML = "";
+    gateEl.style.display = "block";
+    $("gate-pay").style.display = "";
+    $("paid-state").classList.remove("show");
+
+    result.order.forEach(function (name, idx) {
+      var rows = result.groups[name];
+      var g = document.createElement("div");
+      g.className = "group " + (idx === 0 ? "preview" : "locked");
+      g.style.animationDelay = (idx * 60) + "ms";
+
+      var bar = document.createElement("div");
+      bar.className = "group-bar";
+      bar.innerHTML =
+        '<span class="group-name">' + esc(name) + '</span>' +
+        '<span class="group-rows">' + rows.length.toLocaleString() + ' rows</span>' +
+        '<span class="group-flag">' + (idx === 0 ? "free preview" : "locked") + '</span>';
+      g.appendChild(bar);
+
+      if (idx === 0) {
+        g.appendChild(buildPreviewTable(result.headers, rows));
+      } else {
+        var veil = document.createElement("div");
+        veil.className = "group-veil";
+        veil.innerHTML =
+          '<div class="veil-row"></div><div class="veil-row"></div><div class="veil-row"></div>' +
+          '<span class="lock-chip">' +
+            '<svg width="11" height="13" viewBox="0 0 11 13" fill="none"><path d="M2.5 6V4a3 3 0 0 1 6 0v2" stroke="#56697E" stroke-width="1.2"/><rect x="1" y="6" width="9" height="6" rx="1.3" stroke="#56697E" stroke-width="1.2"/></svg>' +
+            esc(name) + ' · ' + rows.length.toLocaleString() + ' rows</span>';
+        g.appendChild(veil);
+      }
+      groupsEl.appendChild(g);
+    });
+  }
+
+  function buildPreviewTable(headers, rows) {
+    var wrap = document.createElement("div");
+    wrap.className = "group-rows-table";
+    var cols = headers.slice(0, 3); // keep the preview tidy
+    var head = '<div class="gr-line head">' + cols.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join("") + '</div>';
+    var body = "";
+    rows.slice(0, 4).forEach(function (r) {
+      body += '<div class="gr-line">' + cols.map(function (c) { return '<span>' + esc(String(r[c] !== undefined ? r[c] : "")) + '</span>'; }).join("") + '</div>';
+    });
+    wrap.innerHTML = head + body;
+    var more = document.createElement("div");
+    more.className = "gr-more";
+    more.textContent = "+ " + (rows.length - 4).toLocaleString() + " more rows in this file";
+    wrap.appendChild(more);
+    return wrap;
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  //  The gate → sandbox checkout → unlocked state.
+  // ───────────────────────────────────────────────────────────────────────
+  var sheet = $("sheet-backdrop");
+  var sheetPay = $("sheet-pay");
+
+  function openSheet() {
+    sheet.classList.add("show");
+    sheetPay.disabled = false;
+    sheetPay.classList.remove("processing");
+    sheetPay.textContent = "Pay £9.00 now";
+    sheetPay.focus();
+  }
+  function closeSheet() { sheet.classList.remove("show"); }
+
+  $("pay-btn").addEventListener("click", openSheet);
+  sheet.addEventListener("click", function (e) { if (e.target === sheet) closeSheet(); });
+
+  sheetPay.addEventListener("click", function () {
+    if (sheetPay.disabled) return;
+    sheetPay.disabled = true;
+    sheetPay.classList.add("processing");
+    sheetPay.textContent = "Authorising…";
+    var wait = prefersReduced ? 200 : 1050;
+    setTimeout(function () {
+      sheetPay.textContent = "Approved ✓";
+      setTimeout(function () { closeSheet(); unlock(); }, prefersReduced ? 120 : 520);
+    }, wait);
+  });
+
+  // reveal the locked groups + download affordance + the line.
+  function unlock() {
+    paid = true;
+    // flip the price into a tick (single cobalt emphasis when the sale lands)
+    var priceEl = $("price");
+    if (!prefersReduced) { priceEl.classList.remove("tick"); void priceEl.offsetWidth; priceEl.classList.add("tick"); }
+
+    // unlock each locked group → swap veil for the real (now revealed) table
+    if (lastSplit) {
+      var lockedGroups = groupsEl.querySelectorAll(".group.locked");
+      lastSplit.order.forEach(function (name, idx) {
+        if (idx === 0) return;
+        var g = groupsEl.children[idx];
+        if (!g) return;
+        g.classList.remove("locked");
+        g.classList.add("unlocked");
+        var flag = g.querySelector(".group-flag");
+        if (flag) flag.textContent = "unlocked";
+        var veil = g.querySelector(".group-veil");
+        if (veil) {
+          var rows = lastSplit.groups[name];
+          var table = buildPreviewTable(lastSplit.headers, rows);
+          g.replaceChild(table, veil);
+        }
+        g.style.animation = "none"; void g.offsetWidth;
+        g.style.animation = "rise .45s var(--ease) both";
+        g.style.animationDelay = ((idx - 1) * 70) + "ms";
+      });
+    }
+
+    $("gate-pay").style.display = "none";
+    $("paid-state").classList.add("show");
+    $("dl-hint").textContent = lastSplit
+      ? (lastSplit.order.length + " CSV files · " +
+         lastSplit.order.reduce(function (a, n) { return a + lastSplit.groups[n].length; }, 0).toLocaleString() + " rows total")
+      : "";
+    syncChrome();
+  }
+
+  // download affordance - build a real .zip-shaped payload from the split data,
+  // offline, and trigger a browser download so the affordance truly works.
+  $("download-btn").addEventListener("click", function () {
+    if (!lastSplit) return;
+    // We can't bundle a real zip without a library, so we hand back a real,
+    // useful combined CSV (every split, labelled) - a genuine artifact.
+    var parts = [];
+    lastSplit.order.forEach(function (name) {
+      var rows = lastSplit.groups[name];
+      var lines = [lastSplit.headers.join(",")];
+      rows.forEach(function (r) {
+        lines.push(lastSplit.headers.map(function (h) {
+          var v = r[h] !== undefined ? String(r[h]) : "";
+          return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+        }).join(","));
+      });
+      parts.push("# " + lastSplit.col + " = " + name + " (" + rows.length + " rows)\n" + lines.join("\n"));
+    });
+    var blob = new Blob([parts.join("\n\n")], { type: "text/csv" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = "incline_split_by_" + lastSplit.col + ".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    $("dl-hint").textContent = "Downloaded · incline_split_by_" + lastSplit.col + ".csv";
+  });
+
+  // ── full reset (Replay) ──────────────────────────────────────────────────
+  function resetDemo() {
+    resetResults();
+    loadSample();
+    acts.forEach(function (a) { /* keep revealed; replay is about content state */ });
+  }
+
+  // ── boot ──────────────────────────────────────────────────────────────────
+  loadSample();
+  acts[0].classList.add("in-view"); // first act visible immediately
+  syncChrome();
+})();
+</script>
+</body>
+</html>
