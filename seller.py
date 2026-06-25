@@ -121,17 +121,29 @@ def value_first_reply(opportunity: dict, tool: dict) -> str:
 
 def help_only_reply(opportunity: dict) -> str:
     """POINT_FREE reply: ONLY the free pointer + the AI disclosure. No paid link."""
+    signal_text = _signal_text(opportunity.get("signal_id"))
     pointer = (opportunity.get("free_pointer") or "").strip()
-    if not pointer:
-        pointer = (
-            "There's already a free way to do this — a quick search for an existing "
-            "free tool or a built-in spreadsheet function should cover it."
+    free_answer = ""
+    try:
+        if signal_text:
+            prompt = (
+                "Someone posted the need below and a free solution already exists. In 2-3 "
+                "plain sentences, name the specific free tool or built-in feature that solves "
+                "it and how to use it. If it is a well-known free tool, include its URL so they "
+                "can go straight to it. Be concrete; no greeting, no sign-off, no hype, no markdown.\n\n"
+                f"Known free option (may be empty): {pointer or 'unknown'}\n\n"
+                f'Their post:\n"""{signal_text}"""'
+            )
+            free_answer = llm.complete(prompt, max_tokens=220, temperature=0.3).strip()
+    except Exception as exc:  # noqa: BLE001
+        print(f"[seller] help_only LLM failed: {exc}")
+    if not free_answer:
+        free_answer = pointer or (
+            "There's already a well-known free tool or built-in feature for this — worth a "
+            "quick search before paying for anything."
         )
-    disclosure = (
-        f"(Heads up: {DISCLOSURE} — I heard this thread and wanted to point you to "
-        "something that already does this for free.)"
-    )
-    return f"{pointer}\n\n{disclosure}"
+    disclosure = f"(Heads up: {DISCLOSURE} — just flagging the free option, since I heard the thread.)"
+    return f"{free_answer}\n\n{disclosure}"
 
 
 def post_or_draft(reply: str, opportunity: dict, tool: Optional[dict] = None) -> dict:

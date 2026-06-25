@@ -416,7 +416,7 @@
     <div class="lastblock" id="lastblock">last block: none yet</div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- no supabase-js: the dashboard talks to PostgREST directly via a fetch shim -->>
   <script>
     // ════════════════════════════════════════════════════════════════════
     //  OPERATOR: paste your Supabase project URL + READ-ONLY anon key here.
@@ -426,7 +426,36 @@
     const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
     const SUPABASE_ANON_KEY = "YOUR-ANON-KEY";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Direct-fetch shim: supabase-js queries hang with this publishable key,
+    // but PostgREST works, so we query it straight. Realtime -> polling (boot).
+    const _SBH = { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY };
+    const supabase = {
+      from(table) {
+        const parts = []; let one = false;
+        const b = {
+          select(c){ parts.push("select=" + encodeURIComponent(c || "*")); return b; },
+          eq(c, v){ parts.push(encodeURIComponent(c) + "=eq." + encodeURIComponent(v)); return b; },
+          neq(c, v){ parts.push(encodeURIComponent(c) + "=neq." + encodeURIComponent(v)); return b; },
+          gte(c, v){ parts.push(encodeURIComponent(c) + "=gte." + encodeURIComponent(v)); return b; },
+          order(c, o){ parts.push("order=" + encodeURIComponent(c) + "." + ((o && o.ascending === false) ? "desc" : "asc")); return b; },
+          limit(n){ parts.push("limit=" + n); return b; },
+          single(){ one = true; return b; },
+          maybeSingle(){ one = true; return b; },
+          then(res, rej){
+            const h = one ? Object.assign({ Accept: "application/vnd.pgrst.object+json" }, _SBH) : _SBH;
+            return fetch(SUPABASE_URL + "/rest/v1/" + table + "?" + parts.join("&"), { headers: h })
+              .then(function (r) { return r.text().then(function (t) {
+                var d = null; try { d = t ? JSON.parse(t) : null; } catch (e) { d = null; }
+                return r.ok ? { data: d, error: null } : { data: null, error: { message: (d && d.message) || ("HTTP " + r.status) } };
+              }); })
+              .then(res, rej);
+          }
+        };
+        return b;
+      },
+      channel() { var ch = { on() { return ch; }, subscribe() { return ch; } }; return ch; },
+      removeChannel() {}
+    };
 
     // ── helpers ─────────────────────────────────────────────────────────
     const $ = (id) => document.getElementById(id);
@@ -832,6 +861,10 @@
     loadFeed();
     loadPosts(false);
     subscribe();
+    // Live updates via polling (replaces the realtime websocket).
+    setInterval(function () {
+      loadSummary(false); refreshFooter(); loadFeed(); loadPosts(false);
+    }, 4000);
   </script>
 </body>
 </html>
