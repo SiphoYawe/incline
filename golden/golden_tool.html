@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSV Column Splitter · Incline</title>
+<style>
+  /* ── CSV Column Splitter · Incline — light-blue, cobalt reserved for paid ── */
+  :root{
+    --bg:#EEF4FB; --surface:#FFFFFF; --surface-2:#F8FBFF;
+    --border:#D8E4F2; --border-2:#C6D6EA;
+    --ink:#112B43; --ink-2:#2C4861; --slate:#56697E;
+    --sky:#3B82F6; --sky-ink:#2F6FE0; --cobalt:#1D4ED8;
+    --block-ink:#C0392F;
+    --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--sans);
+    font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+    min-height:100vh; display:flex; justify-content:center; align-items:flex-start;
+    padding:36px 16px 72px; position:relative;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(120% 60% at 50% -8%, rgba(255,255,255,0.9), rgba(255,255,255,0) 52%),
+      radial-gradient(90% 50% at 100% 0%, rgba(59,130,246,0.07), rgba(59,130,246,0) 60%);
+  }
+  .card{
+    position:relative; z-index:1; width:100%; max-width:640px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:30px 28px 30px;
+    box-shadow:0 1px 2px rgba(17,43,67,0.05), 0 24px 64px -30px rgba(17,43,67,0.24);
+    animation:rise .55s cubic-bezier(.22,1,.36,1) both;
+  }
+  header.top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+  .brand{ display:inline-flex; align-items:center; gap:8px; font-weight:650; letter-spacing:0.16em; font-size:12px; text-transform:uppercase; color:var(--ink); }
+  .built{ display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--slate); text-decoration:none; letter-spacing:0.02em; }
+  .built:hover{ color:var(--sky-ink); }
+  h1{ font-size:25px; font-weight:700; margin:0 0 10px; letter-spacing:-0.02em; color:var(--ink); }
+  .disclosure{ color:var(--slate); font-size:13.5px; margin:0 0 22px; max-width:56ch; line-height:1.55; }
+
+  label.field{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--slate); margin:0 0 9px; font-weight:600; }
+
+  /* input — a real dropzone */
+  .dropzone{
+    position:relative; border:1px solid var(--border); border-radius:14px; background:var(--surface-2);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .dropzone:focus-within{ border-color:var(--sky); box-shadow:0 0 0 3px rgba(59,130,246,0.16); background:#fff; }
+  .dropzone.drag{ border-color:var(--sky); box-shadow:0 0 0 3px rgba(59,130,246,0.20); background:#fff; }
+  textarea{
+    width:100%; min-height:150px; resize:vertical; display:block;
+    background:transparent; color:var(--ink); border:none; outline:none;
+    padding:14px 14px 10px; border-radius:14px 14px 0 0;
+    font-family:var(--mono); font-size:13px; line-height:1.6;
+  }
+  textarea::placeholder{ color:#6B7E94; }
+  .dz-foot{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:9px 12px 10px; border-top:1px solid var(--border);
+    font-size:12px; color:var(--slate);
+  }
+  .dz-foot .dz-hint{ display:inline-flex; align-items:center; gap:7px; }
+  .dz-foot .dz-hint svg{ display:block; opacity:.85; }
+  .dz-browse{
+    display:inline-flex; align-items:center; gap:7px; cursor:pointer;
+    color:var(--ink); background:#fff; border:1px solid var(--border); border-radius:9px;
+    padding:6px 12px; font-size:12px; font-weight:500; transition:border-color .2s, color .2s;
+  }
+  .dz-browse:hover{ border-color:var(--sky); color:var(--sky-ink); }
+  .dz-browse input{ display:none; }
+
+  .selectrow{ display:flex; align-items:center; gap:11px; margin:18px 0 22px; flex-wrap:wrap; }
+  .selectrow span{ font-size:13.5px; color:var(--slate); }
+  select{
+    background:#fff; color:var(--ink); border:1px solid var(--border); border-radius:9px;
+    padding:9px 32px 9px 12px; font-size:13.5px; cursor:pointer; appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2356697E' fill='none' stroke-width='1.4'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 11px center;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  select:hover{ border-color:var(--border-2); }
+  select:focus{ outline:none; border-color:var(--sky); box-shadow:0 0 0 3px rgba(59,130,246,0.16); }
+
+  /* primary (sky) — run the tool; cobalt is reserved for the paid moment */
+  button.primary{
+    width:100%; background:linear-gradient(180deg,#2F74EC,#2563EB); color:#fff;
+    border:none; border-radius:12px; padding:14px 16px; font-size:15px; font-weight:600;
+    cursor:pointer; letter-spacing:0.01em;
+    box-shadow:0 1px 2px rgba(17,43,67,0.12), 0 12px 24px -14px rgba(37,99,235,0.55);
+    transition:transform .12s ease, box-shadow .2s ease, filter .2s ease;
+  }
+  button.primary:hover{ filter:brightness(1.04); }
+  button.primary:active{ transform:translateY(1px); }
+  button.primary:disabled{ opacity:0.55; cursor:default; }
+
+  /* pay (cobalt) — the reserved, heaviest blue: the unlock/paid moment */
+  button.pay{
+    width:100%; background:linear-gradient(180deg,#2456E0,#1D4ED8); color:#fff;
+    border:none; border-radius:12px; padding:14px 16px; font-size:15px; font-weight:700;
+    cursor:pointer; letter-spacing:0.01em;
+    box-shadow:0 1px 2px rgba(17,43,67,0.14), 0 14px 28px -12px rgba(29,78,216,0.6);
+    transition:transform .12s ease, filter .2s ease;
+  }
+  button.pay:hover{ filter:brightness(1.06); }
+  button.pay:active{ transform:translateY(1px); }
+  button.pay:disabled{ opacity:0.6; cursor:default; }
+
+  .trust{ color:var(--slate); font-size:12.5px; text-align:center; margin:14px 0 0; }
+  .err{ color:var(--block-ink); font-size:12.5px; text-align:center; margin:10px 0 0; }
+
+  /* working theatre */
+  .working-head{ font-size:16px; margin:6px 0 16px; color:var(--ink); display:flex; align-items:center; gap:10px; }
+  .working-head .spin{ display:inline-block; color:var(--sky-ink); animation:spin 1.1s linear infinite; }
+  ul.progress{ list-style:none; margin:0; padding:0; }
+  ul.progress li{
+    font-family:var(--mono); font-size:13px; color:var(--slate); padding:6px 0;
+    opacity:0; transform:translateY(4px); transition:opacity .28s ease, transform .28s ease;
+  }
+  ul.progress li.show{ opacity:1; transform:none; }
+  ul.progress li .ok{ color:var(--sky-ink); }
+
+  /* results */
+  .done-head{ font-size:18px; font-weight:700; margin:2px 0 18px; color:var(--ink); letter-spacing:-0.01em; }
+  .done-head .tick{ color:var(--sky-ink); margin-right:7px; }
+  .group{
+    border:1px solid var(--border); border-radius:12px; margin:0 0 12px; overflow:hidden;
+    background:#fff; box-shadow:0 1px 2px rgba(17,43,67,0.04);
+    animation:rise .42s cubic-bezier(.22,1,.36,1) both;
+  }
+  .group .ghead{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:11px 14px; background:var(--surface-2); border-bottom:1px solid var(--border); font-size:13.5px;
+  }
+  .group .gval{ font-weight:650; color:var(--ink); }
+  .group .gmeta{ color:var(--slate); font-size:12.5px; white-space:nowrap; }
+  .group .gmeta.free{ color:var(--sky-ink); font-weight:600; }
+  .rows{
+    font-family:var(--mono); font-size:12px; line-height:1.7;
+    padding:12px 14px; color:#3A5066; white-space:pre; overflow-x:auto; background:#fff;
+  }
+  .rows .more{ color:var(--slate); }
+
+  /* gated rows — shape visible, body tantalizingly veiled */
+  .group.locked{ position:relative; border-color:rgba(29,78,216,0.22); }
+  .group.locked .ghead{ background:linear-gradient(180deg,#F1F6FE,#E9F1FC); }
+  .locked .rows{ filter:blur(4.5px); opacity:0.9; user-select:none; pointer-events:none; }
+  .group.locked::after{
+    content:""; position:absolute; left:0; right:0; bottom:0; height:64%;
+    background:linear-gradient(180deg, rgba(248,251,255,0), rgba(248,251,255,0.94));
+    pointer-events:none;
+  }
+  .lockbadge{ display:inline-flex; align-items:center; gap:6px; color:var(--slate); font-size:12.5px; font-weight:600; }
+  .lockbadge svg{ display:block; }
+
+  .gate{ margin-top:22px; padding-top:20px; border-top:1px solid var(--border); }
+  .price{ font-size:15px; color:var(--slate); margin:0 0 12px; }
+  .price b{ font-size:20px; color:var(--cobalt); font-weight:700; letter-spacing:0.01em; }
+  .sandbox{ color:var(--slate); font-size:12px; text-align:center; margin:12px 0 0; }
+
+  /* unlocked / locked-result (hidden by default — revealed on ?unlocked=1) */
+  #locked-result{ margin-top:18px; }
+  .thanks{
+    border:1px solid rgba(29,78,216,0.30);
+    background:linear-gradient(180deg, rgba(29,78,216,0.07), rgba(29,78,216,0.03));
+    border-radius:12px; padding:16px 16px 18px; margin-bottom:16px;
+  }
+  .thanks .unlocked-line{ color:var(--cobalt); font-weight:700; font-size:15px; margin:0 0 6px; display:flex; align-items:center; gap:7px; }
+  .thanks .unlocked-line .tick{ color:var(--cobalt); margin:0; }
+  .thanks .thanks-line{ color:var(--ink-2); font-size:13.5px; margin:0; }
+  .note{ color:var(--slate); font-size:12.5px; margin:10px 0 0; }
+  [hidden]{ display:none !important; }
+
+  @keyframes rise{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
+  @keyframes spin{ to{ transform:rotate(360deg) } }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; }
+    ul.progress li{ transition:none; }
+  }
+</style>
+</head>
+<body>
+  <main class="card">
+    <header class="top">
+      <div class="brand">&#x2303; Incline</div>
+      <a class="built" href="#" rel="noopener">built by Incline &#x2197;</a>
+    </header>
+
+    <h1>CSV Column Splitter</h1>
+    <p class="disclosure">Built by Incline after hearing your need on r/spreadsheets. Try it on your file, free to run, and see the result before you pay.</p>
+
+    <!-- STATE 1 — INPUT -->
+    <section id="input-state">
+      <label class="field" for="csv-input">Your CSV</label>
+      <div class="dropzone" id="dropzone">
+        <textarea id="csv-input" spellcheck="false" placeholder="Drop your .csv here, or paste rows&#10;&#10;id,name,region&#10;1,Acme,North&#10;2,Beta,South"></textarea>
+        <div class="dz-foot">
+          <span class="dz-hint">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 9.2V2.4M7 2.4 4.4 5M7 2.4 9.6 5" stroke="#56697E" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.2 9v1.8c0 .6.5 1 1 1h7.6c.6 0 1-.4 1-1V9" stroke="#56697E" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Drop a .csv to upload
+          </span>
+          <label class="dz-browse">Browse&#8230;<input type="file" id="csv-file" accept=".csv,text/csv,text/plain"></label>
+        </div>
+      </div>
+      <div class="selectrow">
+        <span>Split by column:</span>
+        <select id="col-select"><option>Paste rows first</option></select>
+      </div>
+      <button class="primary" id="run-btn">Run it on my file &rarr;</button>
+      <p class="trust">Your file stays in your browser.</p>
+      <p class="err" id="input-err" hidden></p>
+    </section>
+
+    <!-- STATE 2 — WORKING -->
+    <section id="working-state" hidden>
+      <div class="working-head"><span class="spin">&#x25D0;</span> Splitting your file&hellip;</div>
+      <ul class="progress" id="progress"></ul>
+    </section>
+
+    <!-- STATE 3 — RESULT PREVIEW + GATE -->
+    <section id="result-state" hidden>
+      <div class="done-head" id="done-head"><span class="tick">&#x2713;</span><span id="done-text">Done.</span></div>
+
+      <!-- free preview: first group -->
+      <div id="preview"></div>
+
+      <!-- gate: locked-group shapes + price + pay (hidden once unlocked) -->
+      <div class="gate" id="gate">
+        <div id="locked-shapes"></div>
+        <p class="price">Keep all <span id="gate-count">files</span> for <b>&pound;9</b></p>
+        <button class="pay" id="pay-btn">Unlock &amp; download &middot; PayPal</button>
+        <p class="sandbox">PayPal sandbox &middot; full flow, no real charge.</p>
+        <p class="err" id="pay-err" hidden>Couldn&rsquo;t reach checkout. Try again.</p>
+      </div>
+
+      <!-- FULL RESULT — hidden by default, revealed only on ?unlocked=1 -->
+      <div id="locked-result" hidden>
+        <div class="thanks">
+          <p class="unlocked-line"><span class="tick">&#x2713;</span> Unlocked.</p>
+          <p class="thanks-line">Thanks, that paid for the tool that heard you.</p>
+        </div>
+        <button class="primary" id="download-btn">Download full split (.csv)</button>
+        <p class="note" id="unlocked-note" hidden></p>
+        <div id="full-groups" style="margin-top:16px"></div>
+      </div>
+    </section>
+  </main>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var STORE_KEY = "incline_csv_split_{{TOOL_ID}}";
+
+  var els = {
+    input: $("input-state"), working: $("working-state"), result: $("result-state"),
+    csv: $("csv-input"), file: $("csv-file"), sel: $("col-select"), dz: $("dropzone"),
+    runBtn: $("run-btn"), inputErr: $("input-err"),
+    progress: $("progress"),
+    doneText: $("done-text"), preview: $("preview"),
+    gate: $("gate"), lockedShapes: $("locked-shapes"), gateCount: $("gate-count"),
+    payBtn: $("pay-btn"), payErr: $("pay-err"),
+    lockedResult: $("locked-result"), downloadBtn: $("download-btn"),
+    unlockedNote: $("unlocked-note"), fullGroups: $("full-groups")
+  };
+
+  // ---- CSV parsing (handles quoted fields + embedded commas/newlines) ----
+  function parseCSV(text){
+    var rows = [], field = "", row = [], inQ = false, i = 0, c;
+    while(i < text.length){
+      c = text[i];
+      if(inQ){
+        if(c === '"'){
+          if(text[i+1] === '"'){ field += '"'; i += 2; continue; }
+          inQ = false; i++; continue;
+        }
+        field += c; i++; continue;
+      }
+      if(c === '"'){ inQ = true; i++; continue; }
+      if(c === ','){ row.push(field); field = ""; i++; continue; }
+      if(c === '\r'){ i++; continue; }
+      if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ""; i++; continue; }
+      field += c; i++;
+    }
+    if(field !== "" || row.length){ row.push(field); rows.push(row); }
+    // drop fully-empty trailing rows
+    return rows.filter(function(r){
+      return r.length > 1 || (r.length === 1 && r[0].trim() !== "");
+    });
+  }
+
+  function csvEscape(v){
+    v = (v == null) ? "" : String(v);
+    if(/[",\r\n]/.test(v)){ return '"' + v.replace(/"/g, '""') + '"'; }
+    return v;
+  }
+  function rowToCSV(arr){ return arr.map(csvEscape).join(","); }
+
+  // ---- split logic: returns {header, colIndex, colName, groups:[{value,rows}]} ----
+  function buildModel(text, colIndex){
+    var rows = parseCSV(text);
+    if(rows.length < 2){ return null; }
+    var header = rows[0];
+    var data = rows.slice(1);
+    if(colIndex == null || colIndex < 0 || colIndex >= header.length){ colIndex = 0; }
+    var order = [], map = {};
+    for(var r = 0; r < data.length; r++){
+      var key = (data[r][colIndex] == null ? "" : data[r][colIndex]);
+      if(!map.hasOwnProperty(key)){ map[key] = []; order.push(key); }
+      map[key].push(data[r]);
+    }
+    var groups = order.map(function(k){ return { value: k, rows: map[k] }; });
+    return { header: header, colIndex: colIndex, colName: header[colIndex] || ("column " + (colIndex+1)),
+             rowCount: data.length, groups: groups };
+  }
+
+  function esc(s){
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  function valLabel(v){ return v === "" ? "(blank)" : v; }
+
+  // render a group's rows block (header line + up to N data rows + "+more")
+  function rowsBlock(model, group, sample){
+    sample = sample || 2;
+    var lines = [ rowToCSV(model.header) ];
+    var shown = Math.min(sample, group.rows.length);
+    for(var i = 0; i < shown; i++){ lines.push(rowToCSV(group.rows[i])); }
+    var html = lines.map(esc).join("\n");
+    var extra = group.rows.length - shown;
+    if(extra > 0){ html += '\n<span class="more">&hellip; +' + extra + ' more rows</span>'; }
+    return '<div class="rows">' + html + '</div>';
+  }
+
+  var LOCK_SVG = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">'
+    + '<rect x="2" y="5.2" width="8" height="6" rx="1" stroke="#56697E" stroke-width="1.1"/>'
+    + '<path d="M3.8 5.2V3.8a2.2 2.2 0 0 1 4.4 0v1.4" stroke="#56697E" stroke-width="1.1"/></svg>';
+
+  // ---- populate column dropdown from header ----
+  function refreshColumns(){
+    var text = els.csv.value;
+    var rows = parseCSV(text);
+    els.sel.innerHTML = "";
+    if(rows.length < 1 || (rows.length === 1 && rows[0].length <= 1 && rows[0][0].trim()==="")){
+      var o = document.createElement("option"); o.textContent = "Paste rows first"; els.sel.appendChild(o);
+      return;
+    }
+    var header = rows[0];
+    header.forEach(function(h, idx){
+      var o = document.createElement("option");
+      o.value = String(idx);
+      o.textContent = (h && h.trim() !== "") ? h : ("column " + (idx + 1));
+      els.sel.appendChild(o);
+    });
+    // default to a likely category column if a header literally named "region"/"category" exists
+    for(var i = 0; i < header.length; i++){
+      if(/^(region|category|group|type|status|country|state)$/i.test((header[i]||"").trim())){
+        els.sel.value = String(i); break;
+      }
+    }
+  }
+
+  // ---- render the result (preview + gate teaser); also stash full model ----
+  var currentModel = null;
+  function renderResult(model){
+    currentModel = model;
+    var k = model.groups.length;
+    els.doneText.textContent = "Done. Your file split into " + k + " file" + (k === 1 ? "" : "s") + ".";
+
+    // free preview = first group
+    var g0 = model.groups[0];
+    els.preview.innerHTML =
+      '<div class="group">'
+      + '<div class="ghead"><span class="gval">' + esc(model.colName) + ' = "' + esc(valLabel(g0.value)) + '"</span>'
+      + '<span class="gmeta free">' + g0.rows.length + ' rows &middot; &#x2713; preview</span></div>'
+      + rowsBlock(model, g0, 2)
+      + '</div>';
+
+    // locked teaser: remaining groups, shape visible, body blurred
+    var shapes = "";
+    for(var i = 1; i < model.groups.length; i++){
+      var g = model.groups[i];
+      shapes +=
+        '<div class="group locked">'
+        + '<div class="ghead"><span class="gval">' + esc(model.colName) + ' = "' + esc(valLabel(g.value)) + '"</span>'
+        + '<span class="lockbadge">' + LOCK_SVG + g.rows.length + ' rows &middot; locked</span></div>'
+        + rowsBlock(model, g, 2)
+        + '</div>';
+    }
+    if(k === 1){
+      shapes = '<p class="note">Just one group in this column. Unlock to download the full file.</p>';
+    }
+    els.lockedShapes.innerHTML = shapes;
+    els.gateCount.textContent = k + " file" + (k === 1 ? "" : "s");
+  }
+
+  // ---- the downloadable artifact: one concatenated CSV, grouped ----
+  function buildDownload(model){
+    var parts = [];
+    for(var i = 0; i < model.groups.length; i++){
+      var g = model.groups[i];
+      parts.push("# " + model.colName + ' = "' + valLabel(g.value) + '"  (' + g.rows.length + " rows)");
+      parts.push(rowToCSV(model.header));
+      for(var r = 0; r < g.rows.length; r++){ parts.push(rowToCSV(g.rows[r])); }
+      parts.push("");
+    }
+    return parts.join("\n");
+  }
+  function sanitizeName(s){ return String(s || "column").replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "column"; }
+  function triggerDownload(model){
+    var blob = new Blob([buildDownload(model)], { type: "text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = sanitizeName(model.colName) + "-split.csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+  }
+
+  // ---- show full (unlocked) groups inside #locked-result ----
+  function renderFull(model){
+    var html = "";
+    for(var i = 0; i < model.groups.length; i++){
+      var g = model.groups[i];
+      html +=
+        '<div class="group">'
+        + '<div class="ghead"><span class="gval">' + esc(model.colName) + ' = "' + esc(valLabel(g.value)) + '"</span>'
+        + '<span class="gmeta">' + g.rows.length + ' rows</span></div>'
+        + rowsBlock(model, g, 3)
+        + '</div>';
+    }
+    els.fullGroups.innerHTML = html;
+  }
+
+  // ---- state transitions ----
+  function show(section){
+    els.input.hidden = section !== "input";
+    els.working.hidden = section !== "working";
+    els.result.hidden = section !== "result";
+  }
+
+  function saveState(model){
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        csv: els.csv.value, col: model ? model.colIndex : (parseInt(els.sel.value, 10) || 0)
+      }));
+    }catch(e){}
+  }
+
+  // ---- run (preview + gate) ----
+  function runSplit(){
+    els.inputErr.hidden = true;
+    var text = els.csv.value;
+    if(!text || !text.trim()){
+      els.inputErr.textContent = "Paste some CSV rows or choose a .csv file first.";
+      els.inputErr.hidden = false; return;
+    }
+    var colIndex = parseInt(els.sel.value, 10);
+    if(isNaN(colIndex)) colIndex = 0;
+    var model = buildModel(text, colIndex);
+    if(!model){
+      els.inputErr.textContent = "That doesn't look like a CSV with a header row and data. Try again.";
+      els.inputErr.hidden = false; return;
+    }
+    saveState(model);
+
+    // STATE 2 — working theatre (~1s), specific to their input
+    show("working");
+    els.progress.innerHTML = "";
+    var k = model.groups.length;
+    var steps = [
+      { html: '<span class="ok">&#x2713;</span> read ' + model.rowCount.toLocaleString() + ' rows' },
+      { html: '<span class="ok">&#x2713;</span> found ' + k + ' value' + (k===1?"":"s") + ' in "' + esc(model.colName) + '"' },
+      { html: '&#x25D0; building ' + k + ' file' + (k===1?"":"s") + '&hellip;' }
+    ];
+    var idx = 0;
+    (function next(){
+      if(idx >= steps.length){
+        setTimeout(function(){ renderResult(model); show("result"); }, 320);
+        return;
+      }
+      var li = document.createElement("li");
+      li.innerHTML = steps[idx].html;
+      els.progress.appendChild(li);
+      requestAnimationFrame(function(){ li.classList.add("show"); });
+      idx++;
+      setTimeout(next, 300);
+    })();
+  }
+
+  // ---- unlock path (returning from PayPal with ?unlocked=1) ----
+  function doUnlock(){
+    var model = null;
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(raw){
+        var st = JSON.parse(raw);
+        model = buildModel(st.csv || "", typeof st.col === "number" ? st.col : 0);
+        if(st.csv){ els.csv.value = st.csv; }
+      }
+    }catch(e){ model = null; }
+
+    if(model){
+      renderResult(model);
+      // remove the blur on the teaser groups now that it's paid for
+      var locked = els.lockedShapes.querySelectorAll(".group.locked");
+      for(var i = 0; i < locked.length; i++){ locked[i].classList.remove("locked"); }
+      renderFull(model);
+      els.unlockedNote.hidden = true;
+    } else {
+      els.unlockedNote.hidden = false;
+      els.unlockedNote.textContent = "Re-paste your file above and it'll rebuild the full download.";
+      els.doneText.textContent = "Unlocked.";
+    }
+
+    show("result");
+    els.gate.hidden = true;            // hide price/pay once unlocked
+    els.lockedResult.hidden = false;   // reveal the full-result region (required contract)
+
+    els.downloadBtn.onclick = function(){
+      if(currentModel){ triggerDownload(currentModel); }
+    };
+    // auto-start the download once for the State-5 "Downloading…" moment
+    if(model){ setTimeout(function(){ triggerDownload(model); }, 400); }
+  }
+
+  // ---- wire up ----
+  els.csv.addEventListener("input", refreshColumns);
+  els.file.addEventListener("change", function(){
+    var f = els.file.files && els.file.files[0];
+    if(!f) return;
+    var reader = new FileReader();
+    reader.onload = function(){ els.csv.value = String(reader.result || ""); refreshColumns(); };
+    reader.readAsText(f);
+  });
+
+  // drag-and-drop a .csv straight onto the input
+  if(els.dz){
+    ["dragenter","dragover"].forEach(function(ev){
+      els.dz.addEventListener(ev, function(e){ e.preventDefault(); els.dz.classList.add("drag"); });
+    });
+    els.dz.addEventListener("dragleave", function(e){
+      if(e.target === els.dz){ els.dz.classList.remove("drag"); }
+    });
+    els.dz.addEventListener("drop", function(e){
+      e.preventDefault(); els.dz.classList.remove("drag");
+      var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if(!f) return;
+      var reader = new FileReader();
+      reader.onload = function(){ els.csv.value = String(reader.result || ""); refreshColumns(); };
+      reader.readAsText(f);
+    });
+  }
+
+  els.runBtn.addEventListener("click", runSplit);
+
+  els.payBtn.addEventListener("click", function(){
+    saveState(currentModel);
+    els.payErr.hidden = true;
+    els.payBtn.disabled = true;
+    var label = els.payBtn.textContent;
+    els.payBtn.textContent = "Opening PayPal…";
+    fetch("{{BASE_URL}}/pay/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tool_id: "{{TOOL_ID}}" })
+    })
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      if(data && data.approval_url){ window.location.href = data.approval_url; }
+      else { throw new Error("no approval_url"); }
+    })
+    .catch(function(){
+      els.payBtn.disabled = false;
+      els.payBtn.textContent = label;
+      els.payErr.hidden = false;
+    });
+  });
+
+  // ---- init ----
+  // Seed a tiny sample so the operator can click straight through in rehearsal.
+  if(!els.csv.value.trim()){
+    els.csv.value = "id,name,region\n1,Acme,North\n2,Beta,South\n3,Coraline,North\n4,Delta,East\n5,Echo,South\n6,Foxtrot,West\n7,Golf,East\n8,Hotel,North";
+  }
+  refreshColumns();
+
+  if(new URLSearchParams(location.search).get("unlocked") === "1"){
+    doUnlock();
+  }
+})();
+</script>
+</body>
+</html>
