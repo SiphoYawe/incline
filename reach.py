@@ -193,3 +193,49 @@ def search_x(queries: list[str]) -> list[dict]:
             seen.add(sig["source_id"])
             out.append(sig)
     return out
+
+
+# ── WRITE / COMMENT (opt-in) ─────────────────────────────────────────────
+# agent-reach itself is read-only; these post THROUGH the underlying CLIs using
+# the account already logged in on this host:
+#   Reddit -> ``rdt comment <post_id> "text"``   (e.g. the authed rdt account)
+#   X      -> ``twitter reply <tweet_id> "text"``
+# They only work where the CLIs are installed + authenticated — NOT the Modal
+# cloud loop. Outbound + ToS-sensitive: the caller (seller) gates this behind
+# REPLY_MODE=post and the posts/hour guardrail.
+def _run_text(argv: list[str]) -> dict:
+    """Run a CLI write command. Returns {ok, output, error}; never raises."""
+    try:
+        proc = subprocess.run(
+            argv, capture_output=True, text=True, timeout=_CLI_TIMEOUT, check=False
+        )
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "output": "", "error": str(exc)}
+    ok = proc.returncode == 0
+    return {
+        "ok": ok,
+        "output": (proc.stdout or "").strip(),
+        "error": "" if ok else (proc.stderr or proc.stdout or "").strip(),
+    }
+
+
+def post_comment(signal: dict, text: str) -> dict:
+    """Post a reply to the signal's source post/tweet via the authed CLI.
+
+    Returns {ok, output, error}; never raises. ok=False (with a reason) when the
+    CLI is unavailable — e.g. the Modal cloud loop — so the caller falls back to
+    draft. Uses the account already logged into rdt-cli / twitter-cli.
+    """
+    source = (signal or {}).get("source")
+    sid = (signal or {}).get("source_id")
+    if not sid or not text:
+        return {"ok": False, "output": "", "error": "missing source_id or text"}
+    if source == "reddit":
+        if not reddit_available():
+            return {"ok": False, "output": "", "error": "rdt CLI not available"}
+        return _run_text(["rdt", "comment", str(sid), text])
+    if source == "x":
+        if not x_available():
+            return {"ok": False, "output": "", "error": "twitter CLI not available"}
+        return _run_text(["twitter", "reply", str(sid), text])
+    return {"ok": False, "output": "", "error": f"unsupported source: {source}"}

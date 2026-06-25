@@ -12,10 +12,12 @@ the reply contains ONLY the free pointer + the disclosure — no paid/tool link
 (the ethical filter, end to end).
 
 Runs in DRAFT mode by default (REPLY_MODE=draft): the reply is generated,
-persisted, and logged to activity_log as a `replied` row, but nothing is posted
-to Reddit (the listener is read-only; posting would need write auth). The demo
-never hinges on a live post going through. Every public entry point is wrapped
-so a failure can never crash the unattended loop.
+persisted, and logged to activity_log as a `replied` row, but nothing is posted.
+Set REPLY_MODE=post to actually comment via the agent-reach CLIs (rdt comment /
+twitter reply) as the logged-in account — only where those CLIs are installed and
+authenticated (the local loop, NOT the Modal cloud loop); it falls back to a draft
+row on any failure. The demo never hinges on a live post. Every public entry point
+is wrapped so a failure can never crash the unattended loop.
 """
 
 from __future__ import annotations
@@ -57,6 +59,20 @@ def _signal_text(signal_id: Optional[str]) -> str:
     except Exception as exc:  # noqa: BLE001 — grounding is best-effort
         print(f"[seller] could not fetch signal text: {exc}")
     return ""
+
+
+def _signal_row(signal_id: Optional[str]) -> Optional[dict]:
+    """Fetch a signal's source + source_id (the post/tweet to reply to)."""
+    if not signal_id:
+        return None
+    try:
+        res = (
+            db.select("signals", "source,source_id").eq("id", signal_id).limit(1).execute()
+        )
+        return res.data[0] if res.data else None
+    except Exception as exc:  # noqa: BLE001
+        print(f"[seller] could not fetch signal row: {exc}")
+        return None
 
 
 def _fallback_free_answer(signal_text: str) -> str:
@@ -129,15 +145,33 @@ def post_or_draft(reply: str, opportunity: dict, tool: Optional[dict] = None) ->
     """
     mode = os.environ.get("REPLY_MODE", "draft").strip().lower()
     if mode == "post":
-        # Posting to Reddit requires write auth (out of scope). Keep draft
-        # behaviour for the demo; record it as a posted reply for the audit.
+        # Live posting via the agent-reach CLIs (rdt comment / twitter reply) as
+        # the logged-in account. Works only where the CLIs are installed AND
+        # authenticated (the local loop, NOT the Modal cloud loop). On any
+        # failure it falls back to a draft row so the loop never breaks.
+        import reach  # optional dependency on the agent-reach CLIs
+
+        signal = _signal_row(opportunity.get("signal_id"))
+        result = (
+            reach.post_comment(signal, reply)
+            if signal
+            else {"ok": False, "error": "signal not found"}
+        )
+        if result.get("ok"):
+            db.log_activity(
+                opportunity.get("signal_id"),
+                "replied",
+                "posted reply + soft link (live)",
+                {"mode": "posted", "text": reply, "via": "agent-reach"},
+            )
+            return {"mode": "posted", "text": reply}
         db.log_activity(
             opportunity.get("signal_id"),
             "replied",
-            "posted reply + soft link",
-            {"mode": "posted", "text": reply},
+            "posted reply + soft link (draft — live post unavailable)",
+            {"mode": "draft", "text": reply, "post_error": result.get("error")},
         )
-        return {"mode": "posted", "text": reply}
+        return {"mode": "draft", "text": reply, "post_error": result.get("error")}
 
     # Default demo-safe path: draft only.
     db.log_activity(
