@@ -84,7 +84,7 @@ def web():
     """Serve tools + PayPal capture + seed/kill controls."""
     _ensure_path()
 
-    from fastapi import FastAPI, Request
+    from fastapi import Body, FastAPI
     from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
     import db
@@ -121,9 +121,8 @@ def web():
 
     # ── SELL: PayPal sandbox order create (S-E4-3) ──────────────────────
     @api.post("/pay/create")
-    async def pay_create(request: Request):
-        body = await request.json()
-        tool_id = body.get("tool_id")
+    def pay_create(payload: dict = Body(default={})):
+        tool_id = payload.get("tool_id")
         tool = _fetch_tool(tool_id)
         if not tool:
             return JSONResponse({"error": "tool not found"}, status_code=404)

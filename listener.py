@@ -120,9 +120,7 @@ def _poll_reddit_json() -> list[dict]:
             resp.raise_for_status()
             children = resp.json().get("data", {}).get("children", []) or []
         except Exception as exc:  # noqa: BLE001 — one bad subreddit must not kill the poll
-            db.log_activity(
-                None, "heard", f"reddit poll failed for r/{sub}: {exc}", {"sub": sub}
-            )
+            print(f"[listener] reddit poll failed for r/{sub}: {exc}")  # console only
             continue
         for post in children:
             sig = _normalize(post)
@@ -158,10 +156,11 @@ def poll_reddit() -> list[dict]:
             used = "json" if used != "agent-reach" else "agent-reach+json"
         upserted = _upsert_signals(signals)
         n = len(upserted)
-        db.log_activity(None, "heard", f"heard {n} need(s)", {"n": n, "via": used})
+        if n:  # only surface real signal arrivals to the feed
+            db.log_activity(None, "heard", f"heard {n} need(s)", {"n": n, "via": used})
         return upserted
     except Exception as exc:  # noqa: BLE001 — never crash the loop
-        db.log_activity(None, "heard", f"poll_reddit failed: {exc}", {"n": 0})
+        print(f"[listener] poll_reddit failed: {exc}")
         return []
 
 
@@ -175,17 +174,16 @@ def poll_x() -> list[dict]:
     """
     try:
         if not reach.x_available():
-            db.log_activity(
-                None, "heard", "x backend unavailable (twitter-cli not on PATH)", {"n": 0}
-            )
+            print("[listener] x backend unavailable (twitter-cli not on PATH)")
             return []
         signals = reach.search_x(list(_INTENT_PHRASES))
         upserted = _upsert_signals(signals)
         n = len(upserted)
-        db.log_activity(None, "heard", f"heard {n} X need(s)", {"n": n, "via": "agent-reach"})
+        if n:
+            db.log_activity(None, "heard", f"heard {n} X need(s)", {"n": n, "via": "agent-reach"})
         return upserted
     except Exception as exc:  # noqa: BLE001 — never crash the loop
-        db.log_activity(None, "heard", f"poll_x failed: {exc}", {"n": 0})
+        print(f"[listener] poll_x failed: {exc}")
         return []
 
 
