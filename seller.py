@@ -108,14 +108,28 @@ def value_first_reply(opportunity: dict, tool: dict) -> str:
         free_answer = _fallback_free_answer(signal_text)
 
     url = (tool or {}).get("url") or ""
+    if not url:  # link a tool already built for this signal, if any
+        try:
+            r = (
+                db.select("tools", "url")
+                .eq("signal_id", opportunity.get("signal_id"))
+                .order("generated_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+            url = (r.data[0].get("url") if r.data else "") or ""
+        except Exception:  # noqa: BLE001
+            url = ""
 
-    # Disclosure (one plain line) + exactly one soft-framed link, placed last.
-    soft_offer = (
-        f"(Heads up: {DISCLOSURE} — I heard this thread and made a small tool for "
-        f"exactly this.) If you'd rather just have it done for you, it's here: {url} "
-        "— you'll see it run on your input before anything's gated. No worries "
-        "either way, the manual route above works fine."
-    )
+    if url:
+        soft_offer = (
+            f"(Heads up: {DISCLOSURE} — I heard this thread and made a small tool for "
+            f"exactly this.) If you'd rather just have it done for you, it's here: {url} "
+            "— you'll see it run on your input before anything's gated. No worries "
+            "either way, the manual route above works fine."
+        )
+    else:  # no tool yet — the free answer stands alone (help first, no link)
+        soft_offer = f"(Heads up: {DISCLOSURE} — just sharing this since I heard the thread.)"
     return f"{free_answer}\n\n{soft_offer}"
 
 

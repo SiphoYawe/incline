@@ -45,12 +45,14 @@ def run_loop() -> None:
     try:
         for sig in db.signals_without_opportunity():
             opp = qualifier.qualify_signal(sig)
-            # POINT_FREE → help-only free pointer, NEVER builds (the soul).
-            if opp and opp.get("verdict") == "POINT_FREE":
+            # Comment on EVERY qualified post: POINT_FREE -> free pointer (no charge),
+            # everything else -> a genuinely helpful value-first reply (links a tool
+            # if one was built for the signal). Caps + draft-mode still apply.
+            if opp:
                 try:
                     seller.sell(opp, None)
                 except Exception as exc:  # noqa: BLE001
-                    db.log_activity(sig.get("id"), "blocked", f"help-only reply failed: {exc}")
+                    db.log_activity(sig.get("id"), "blocked", f"reply failed: {exc}")
     except Exception as exc:  # noqa: BLE001
         db.log_activity(None, "blocked", f"qualify failed: {exc}")
 
@@ -81,11 +83,9 @@ def run_loop() -> None:
     except Exception as exc:  # noqa: BLE001
         db.log_activity(tool.get("signal_id"), "blocked", f"deploy failed: {exc}")
 
-    # 6 SELL — value-first reply (DRAFT mode), respecting the posts/hour cap.
-    try:
-        seller.sell(top, tool)
-    except Exception as exc:  # noqa: BLE001
-        db.log_activity(top.get("signal_id"), "blocked", f"sell failed: {exc}")
+    # 6 SELL — the triaged post was already replied to in the QUALIFY step; its
+    # freshly-built tool is now live and linked on the dashboard, so we do NOT
+    # post a second comment on the same thread.
 
 
 def dry_run() -> None:
