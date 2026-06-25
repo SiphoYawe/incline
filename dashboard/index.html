@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Incline · Autonomy Dashboard</title>
+<style>
+  /* ── Incline · Autonomy Dashboard — light-blue editorial register ─────── */
+  :root {
+    --bg:        #EEF4FB;  /* soft cool blue-white — the calm ground */
+    --bg-tint:   #E4EDF8;
+    --surface:   #FFFFFF;  /* raised panel */
+    --surface-2: #F8FBFF;  /* whisper blue */
+    --border:    #D8E4F2;  /* hairline */
+    --border-2:  #C6D6EA;
+    --ink:       #112B43;  /* deep navy — primary text */
+    --ink-2:     #2C4861;
+    --slate:     #56697E;  /* secondary text (AA on bg & surface) */
+    --sky:       #3B82F6;  /* primary / listen / LIVE accent */
+    --sky-ink:   #2F6FE0;  /* sky tuned for small text (AA) */
+    --cobalt:    #1D4ED8;  /* RESERVED — revenue / SALE (heaviest blue) */
+    --warn:      #C77D11;  /* cap approaching */
+    --block:     #D64545;  /* cap hit (bar fill) */
+    --block-ink: #C0392F;  /* cap hit (text, AA) */
+    --mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    overflow: hidden;            /* 16:9 projector-safe, no scroll */
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(120% 78% at 50% -12%, rgba(255,255,255,0.95), rgba(255,255,255,0) 56%),
+      radial-gradient(90% 60% at 100% 0%, rgba(59,130,246,0.07), rgba(59,130,246,0) 60%);
+  }
+  body > * { position: relative; z-index: 1; }
+
+  .label {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--slate);
+  }
+
+  /* ── Top bar ─────────────────────────────────────────────────────────── */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 36px; border-bottom: 1px solid var(--border);
+    animation: rise .55s cubic-bezier(.22,1,.36,1) both;
+  }
+  .wordmark { font-weight: 650; letter-spacing: 0.16em; font-size: 0.92rem; text-transform: uppercase; color: var(--ink); }
+  .wordmark .tag { color: var(--slate); font-weight: 400; letter-spacing: 0.01em; text-transform: none; font-size: 0.9rem; }
+  .topbar-right { display: flex; align-items: center; gap: 22px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 7px 15px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 999px;
+    font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+    box-shadow: 0 1px 2px rgba(17,43,67,0.05);
+  }
+  .pill b { color: var(--sky-ink); font-weight: 650; }
+  .pill .pill-sub { color: var(--slate); font-weight: 500; }
+  .live-dot {
+    width: 9px; height: 9px; border-radius: 50%; background: var(--sky);
+    animation: breathe 2.4s ease-in-out infinite;
+  }
+  .clock { font-family: var(--mono); color: var(--slate); font-size: 0.95rem; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+
+  /* ── Hero revenue counter ────────────────────────────────────────────── */
+  .hero {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 30px;
+    padding: 34px 40px 30px; border-bottom: 1px solid var(--border);
+    animation: rise .55s cubic-bezier(.22,1,.36,1) .08s both;
+  }
+  .hero-left { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .figure-wrap { display: flex; align-items: flex-start; gap: 14px; }
+  .figure {
+    font-family: var(--mono); color: var(--cobalt);
+    font-size: clamp(3rem, 8.4vw, 7rem); line-height: 0.9; font-weight: 600;
+    letter-spacing: 0.01em; font-variant-numeric: tabular-nums;
+    position: relative; transform-origin: left center; display: inline-block;
+  }
+  .figure::after {
+    content: ""; position: absolute; left: 46%; top: 50%;
+    width: 150%; height: 240%; transform: translate(-50%,-50%) scale(.6);
+    background: radial-gradient(closest-side, rgba(29,78,216,0.30), rgba(29,78,216,0) 72%);
+    opacity: 0; pointer-events: none; z-index: -1; border-radius: 50%;
+  }
+  .figure.tick { animation: salePulse 640ms cubic-bezier(.22,1,.36,1); }
+  .figure.tick::after { animation: bloom 1000ms ease-out; }
+  .trend { color: var(--cobalt); font-size: clamp(1rem, 2.2vw, 1.7rem); line-height: 1; margin-top: 0.35em; opacity: 0.82; }
+  .hero-right { text-align: right; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+  .sales-count { font-family: var(--mono); font-size: 1.4rem; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+  .sales-count .humans { color: var(--slate); }
+  .hero-sub { font-family: var(--mono); color: var(--slate); font-size: 0.92rem; letter-spacing: 0.01em; }
+
+  /* ── Activity feed ───────────────────────────────────────────────────── */
+  .activity {
+    padding: 22px 40px 12px; overflow: hidden; display: flex; flex-direction: column; min-height: 0;
+    animation: rise .55s cubic-bezier(.22,1,.36,1) .16s both;
+  }
+  .activity .label { margin-bottom: 16px; }
+  #feed { display: flex; flex-direction: column; overflow: hidden; }
+  .feed-line {
+    display: grid; grid-template-columns: 62px 172px 1fr; gap: 16px;
+    align-items: baseline; padding: 9px 12px; border-radius: 8px;
+    font-size: 1rem; color: var(--ink);
+    transition: opacity .4s ease;
+  }
+  .feed-line.new { animation: slideIn 320ms cubic-bezier(.22,1,.36,1); }
+  #feed .feed-line:nth-child(n+9)  { opacity: 0.74; }
+  #feed .feed-line:nth-child(n+11) { opacity: 0.5; }
+  .feed-line .ts   { font-family: var(--mono); color: var(--slate); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+  .feed-line .verb {
+    font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em;
+    font-size: 0.8rem; font-weight: 600; color: var(--slate);
+  }
+  .feed-line .obj { color: var(--ink-2); font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* row variants (classes set by JS) */
+  .feed-line.row-heard .verb { color: var(--sky-ink); }
+  .feed-line.row-heard .obj  { color: var(--ink); }
+  .feed-line.row-sale  { background: rgba(29,78,216,0.07); box-shadow: inset 0 0 0 1px rgba(29,78,216,0.16); }
+  .feed-line.row-sale .verb, .feed-line.row-sale .obj { color: var(--cobalt); font-weight: 700; }
+  .feed-line.row-sale .ts { color: var(--cobalt); opacity: 0.85; }
+  .feed-line.row-block { background: rgba(214,69,69,0.09); box-shadow: inset 0 0 0 1px rgba(214,69,69,0.18); }
+  .feed-line.row-block .verb, .feed-line.row-block .obj { color: var(--block-ink); }
+  .feed-line.row-free  { background: rgba(59,130,246,0.08); }
+  .feed-line.row-free .verb, .feed-line.row-free .obj { color: var(--sky-ink); }
+
+  /* ── Guardrail footer ────────────────────────────────────────────────── */
+  .footer {
+    border-top: 1px solid var(--border); padding: 16px 40px 18px; background: var(--surface);
+    box-shadow: 0 -10px 28px -20px rgba(17,43,67,0.18);
+    animation: rise .55s cubic-bezier(.22,1,.36,1) .24s both;
+  }
+  .foot-label { display: block; margin-bottom: 12px; }
+  .footer-row { display: flex; align-items: center; gap: 42px; flex-wrap: wrap; }
+  .meter { display: flex; flex-direction: column; gap: 7px; min-width: 230px; }
+  .meter-head { display: flex; justify-content: space-between; gap: 16px; font-family: var(--mono); font-size: 0.9rem; color: var(--slate); }
+  .meter-head > span:first-child { text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.72rem; font-weight: 600; }
+  .meter-head b { color: var(--ink); font-weight: 600; }
+  .bar { height: 7px; background: #DCE6F3; border-radius: 5px; overflow: hidden; }
+  .bar > span {
+    display: block; height: 100%; width: 0%;
+    background: linear-gradient(90deg, #9DB2CB, #7E96B3); border-radius: 5px;
+    transition: width 360ms cubic-bezier(.22,1,.36,1), background 280ms ease-out;
+  }
+  .bar.warn > span { background: var(--warn); }
+  .bar.hit  > span { background: var(--block); }
+  .maxprice { font-family: var(--mono); font-size: 0.9rem; color: var(--slate); }
+  .maxprice b { color: var(--ink); }
+  .lastblock { margin-top: 14px; font-family: var(--mono); font-size: 0.88rem; color: var(--slate); }
+  .lastblock .ok { color: var(--sky-ink); font-weight: 600; }
+
+  /* ── Keyframes ───────────────────────────────────────────────────────── */
+  @keyframes breathe {
+    0%,100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.30); opacity: 1; }
+    50%     { box-shadow: 0 0 0 7px rgba(59,130,246,0);   opacity: 0.5; }
+  }
+  @keyframes salePulse { 0% { transform: scale(1); } 35% { transform: scale(1.06); } 100% { transform: scale(1); } }
+  @keyframes bloom {
+    0%   { opacity: 0; transform: translate(-50%,-50%) scale(.6); }
+    30%  { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(1.28); }
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+  @keyframes rise    { from { opacity: 0; transform: translateY(10px);  } to { opacity: 1; transform: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    .figure::after { display: none; }
+  }
+</style>
+</head>
+<body>
+  <!-- Top bar: wordmark + LIVE pill + wall clock -->
+  <header class="topbar">
+    <div class="wordmark">INCLINE <span class="tag">· the business that inclines its ear</span></div>
+    <div class="topbar-right">
+      <span class="pill"><span class="live-dot"></span><b>LIVE</b> <span class="pill-sub">· unattended</span></span>
+      <span class="clock" id="clock">--:--:--</span>
+    </div>
+  </header>
+
+  <!-- Hero revenue counter -->
+  <section class="hero">
+    <div class="hero-left">
+      <span class="label">Revenue (PayPal sandbox)</span>
+      <div class="figure-wrap">
+        <span class="figure" id="figure">£ 0.00</span>
+        <span class="trend" aria-hidden="true">&#9650;</span>
+      </div>
+    </div>
+    <div class="hero-right">
+      <span class="sales-count"><span id="sale-count">0</span> sales <span class="humans">· 0 humans</span></span>
+      <span class="hero-sub" id="hero-sub">avg £0.00 · last -</span>
+    </div>
+  </section>
+
+  <!-- Activity feed (reverse-chron, locked verbs) -->
+  <section class="activity">
+    <span class="label">Activity · newest on top</span>
+    <div id="feed"></div>
+  </section>
+
+  <!-- Guardrail footer -->
+  <footer class="footer">
+    <span class="label foot-label">Guardrails · enforced in code</span>
+    <div class="footer-row">
+      <div class="meter">
+        <div class="meter-head"><span>spend</span><span><b id="spend-used">£0.00</b> / <span id="spend-cap">£0.00</span></span></div>
+        <div class="bar" id="spend-bar"><span></span></div>
+      </div>
+      <div class="meter">
+        <div class="meter-head"><span>posts this hr</span><span><b id="posts-used">0</b> / <span id="posts-cap">0</span></span></div>
+        <div class="bar" id="posts-bar"><span></span></div>
+      </div>
+      <div class="maxprice">max price <b id="max-price">£0.00</b></div>
+    </div>
+    <div class="lastblock" id="lastblock">last block: none yet</div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ════════════════════════════════════════════════════════════════════
+    //  OPERATOR: paste your Supabase project URL + READ-ONLY anon key here.
+    //  (The anon key is safe to ship in a static page for the hackathon —
+    //   it is the public read/realtime key, not the service-role secret.)
+    // ════════════════════════════════════════════════════════════════════
+    const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
+    const SUPABASE_ANON_KEY = "YOUR-ANON-KEY";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ── helpers ─────────────────────────────────────────────────────────
+    const $ = (id) => document.getElementById(id);
+    const money = (n) => "£ " + Number(n || 0).toFixed(2);
+    const moneyTight = (n) => "£" + Number(n || 0).toFixed(2);
+    const hhmm = (iso) => {
+      if (!iso) return "-";
+      const d = new Date(iso);
+      return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    };
+
+    const prefersReduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+    // Premium hero counter: roll the figure up to the real total (odometer feel).
+    // Only ever called from a REAL sales row, so the count never fakes a tick.
+    let figureValue = 0;
+    function setFigure(total, animate) {
+      const el = $("figure");
+      total = Number(total || 0);
+      if (!animate || prefersReduced) { figureValue = total; el.textContent = money(total); return; }
+      const start = figureValue, end = total, dur = 720, t0 = performance.now();
+      (function frame(now) {
+        let p = (now - t0) / dur; if (p > 1) p = 1;
+        const eased = 1 - Math.pow(1 - p, 3); // ease-out-cubic
+        el.textContent = money(start + (end - start) * eased);
+        if (p < 1) requestAnimationFrame(frame);
+        else { figureValue = end; el.textContent = money(end); }
+      })(performance.now());
+    }
+
+    // activity_log.stage → locked feed verb (ux-spec §1)
+    const VERB = {
+      heard: "heard", checked: "checked", qualified: "qualified", triaged: "qualified",
+      built: "building", building: "building", deployed: "deployed",
+      replied: "posted reply", paid: "SALE", blocked: "blocked", escalation: "blocked",
+    };
+
+    function classify(row) {
+      const stage = row.stage || "";
+      const detail = row.detail || "";
+      const meta = row.meta || {};
+      let verb = VERB[stage] || stage;
+      let cls = "";
+      const isPointFree =
+        (meta && meta.verdict === "POINT_FREE") || /point[_ ]?free/i.test(detail) ||
+        /pointed to free/i.test(detail);
+      if (stage === "qualified" && isPointFree) { verb = "pointed to FREE tool"; cls = "row-free"; }
+      if (stage === "paid") cls = "row-sale";
+      else if (stage === "heard") cls = "row-heard";
+      else if (stage === "blocked" || stage === "escalation") cls = "row-block";
+      return { verb, cls };
+    }
+
+    function detailText(row) {
+      let d = row.detail || "";
+      const meta = row.meta || {};
+      if (row.stage === "paid" && !d && meta.amount != null) d = moneyTight(meta.amount);
+      return d;
+    }
+
+    function makeFeedLine(row, isNew) {
+      const { verb, cls } = classify(row);
+      const el = document.createElement("div");
+      el.className = "feed-line" + (cls ? " " + cls : "") + (isNew ? " new" : "");
+      const ts = document.createElement("span");
+      ts.className = "ts"; ts.textContent = hhmm(row.created_at);
+      const vb = document.createElement("span");
+      vb.className = "verb"; vb.textContent = verb;
+      const ob = document.createElement("span");
+      ob.className = "obj"; ob.textContent = detailText(row);
+      el.append(ts, vb, ob);
+      return el;
+    }
+
+    const MAX_FEED = 12;
+    function trimFeed() {
+      const feed = $("feed");
+      while (feed.children.length > MAX_FEED) feed.removeChild(feed.lastChild);
+    }
+
+    // ── wall clock ──────────────────────────────────────────────────────
+    function tickClock() {
+      const d = new Date();
+      $("clock").textContent =
+        [d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, "0")).join(":");
+    }
+    setInterval(tickClock, 1000); tickClock();
+
+    // ── hero counter ────────────────────────────────────────────────────
+    async function loadSummary(animate) {
+      try {
+        const { data, error } = await supabase.from("revenue_summary").select("*").single();
+        if (error) { console.warn("revenue_summary:", error.message); return; }
+        const total = data ? data.total_revenue : 0;
+        const count = data ? data.sale_count : 0;
+        const last = data ? data.last_sale_at : null;
+        setFigure(total, animate);
+        $("sale-count").textContent = count;
+        const avg = count > 0 ? total / count : 0;
+        $("hero-sub").textContent = "avg " + moneyTight(avg) + " · last " + hhmm(last);
+        if (animate && !prefersReduced) {
+          const fig = $("figure");
+          fig.classList.remove("tick"); void fig.offsetWidth; fig.classList.add("tick");
+        }
+      } catch (e) { console.warn("loadSummary failed:", e); }
+    }
+
+    // ── guardrail footer ────────────────────────────────────────────────
+    function paintBar(barEl, ratio) {
+      barEl.classList.remove("warn", "hit");
+      if (ratio >= 1) barEl.classList.add("hit");
+      else if (ratio >= 0.8) barEl.classList.add("warn");
+      barEl.firstElementChild.style.width = Math.min(ratio * 100, 100) + "%";
+    }
+
+    async function refreshFooter() {
+      try {
+        // caps + spend from the single guardrail_limits row
+        const { data: g } = await supabase.from("guardrail_limits").select("*").eq("id", 1).single();
+        const spendUsed = g ? Number(g.spend_used || 0) : 0;
+        const spendCap = g ? Number(g.max_spend || 0) : 0;
+        const postsCap = g ? Number(g.max_posts_per_hour || 0) : 0;
+        const maxPrice = g ? Number(g.max_price || 0) : 0;
+        $("spend-used").textContent = moneyTight(spendUsed);
+        $("spend-cap").textContent = moneyTight(spendCap);
+        $("max-price").textContent = moneyTight(maxPrice);
+        $("posts-cap").textContent = postsCap;
+        paintBar($("spend-bar"), spendCap > 0 ? spendUsed / spendCap : 0);
+
+        // posts/hr is computed live from activity_log (not a stored column)
+        const cutoff = new Date(Date.now() - 3600 * 1000).toISOString();
+        const { count } = await supabase
+          .from("activity_log")
+          .select("id", { count: "exact", head: true })
+          .eq("stage", "replied")
+          .gte("created_at", cutoff);
+        const postsUsed = count || 0;
+        $("posts-used").textContent = postsUsed;
+        paintBar($("posts-bar"), postsCap > 0 ? postsUsed / postsCap : 0);
+
+        // most recent block / escalation row
+        const { data: blocks } = await supabase
+          .from("activity_log")
+          .select("created_at, detail")
+          .in("stage", ["blocked", "escalation"])
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (blocks && blocks.length) {
+          const b = blocks[0];
+          $("lastblock").innerHTML =
+            "last block: " + hhmm(b.created_at) + " &quot;" + (b.detail || "") + "&quot; <span class='ok'>&#10003; enforced</span>";
+        }
+      } catch (e) { console.warn("refreshFooter failed:", e); }
+    }
+
+    // ── activity feed initial load ──────────────────────────────────────
+    async function loadFeed() {
+      try {
+        const { data, error } = await supabase
+          .from("activity_log")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(12);
+        if (error) { console.warn("activity_log:", error.message); return; }
+        const feed = $("feed");
+        feed.innerHTML = "";
+        (data || []).forEach((row) => feed.appendChild(makeFeedLine(row, false)));
+      } catch (e) { console.warn("loadFeed failed:", e); }
+    }
+
+    // ── realtime (NOT polling) ──────────────────────────────────────────
+    function subscribe() {
+      // A real `sales` insert is the ONLY thing that moves the counter.
+      supabase
+        .channel("sales-stream")
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "sales" }, () => {
+          loadSummary(true); // re-read the ledger summary + animate the tick
+        })
+        .subscribe();
+
+      // Every loop step writes an activity_log row → prepend a feed line.
+      supabase
+        .channel("activity-stream")
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_log" }, (payload) => {
+          const feed = $("feed");
+          feed.insertBefore(makeFeedLine(payload.new, true), feed.firstChild);
+          trimFeed();
+          refreshFooter(); // replied/blocked rows move the meters + last-block line
+        })
+        .subscribe();
+    }
+
+    // ── boot ────────────────────────────────────────────────────────────
+    loadSummary(false);
+    refreshFooter();
+    loadFeed();
+    subscribe();
+  </script>
+</body>
+</html>
